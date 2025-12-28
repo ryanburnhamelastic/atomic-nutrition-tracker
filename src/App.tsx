@@ -18,7 +18,11 @@ if (!clerkPubKey) {
 
 export default function App() {
   return (
-    <ClerkProvider publishableKey={clerkPubKey}>
+    <ClerkProvider
+      publishableKey={clerkPubKey}
+      afterSignInUrl="/"
+      afterSignUpUrl="/"
+    >
       <AuthProvider>
         <ThemeProvider>
           <NutritionProvider>
