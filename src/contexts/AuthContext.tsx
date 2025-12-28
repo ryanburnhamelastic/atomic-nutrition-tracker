@@ -1,0 +1,103 @@
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { useAuth, useUser } from '@clerk/clerk-react';
+import { User } from '../types';
+import { usersApi, setAuthTokenGetter } from '../lib/api';
+
+interface AuthContextType {
+  isLoaded: boolean;
+  isSignedIn: boolean;
+  userId: string | null;
+  userEmail: string | null;
+  userName: string | null;
+  user: User | null;
+  refreshUser: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function useAuthContext() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuthContext must be used within an AuthProvider');
+  }
+  return context;
+}
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export function AuthProvider({ children }: AuthProviderProps) {
+  const { isLoaded, isSignedIn, userId, getToken } = useAuth();
+  const { user: clerkUser } = useUser();
+  const [user, setUser] = useState<User | null>(null);
+  const [userLoading, setUserLoading] = useState(true);
+
+  // Set up token getter for API calls
+  useEffect(() => {
+    setAuthTokenGetter(async () => {
+      if (!isSignedIn) return null;
+      return await getToken();
+    });
+  }, [isSignedIn, getToken]);
+
+  // Fetch or create user on sign in
+  useEffect(() => {
+    const syncUser = async () => {
+      if (!isLoaded || !isSignedIn || !clerkUser) {
+        setUser(null);
+        setUserLoading(false);
+        return;
+      }
+
+      setUserLoading(true);
+
+      try {
+        // Try to fetch existing user
+        const response = await usersApi.get();
+
+        if (response.data) {
+          setUser(response.data);
+        } else if (response.error === 'User not found') {
+          // Create new user on first login
+          const createResponse = await usersApi.create({
+            email: clerkUser.primaryEmailAddress?.emailAddress || '',
+            firstName: clerkUser.firstName || undefined,
+            lastName: clerkUser.lastName || undefined,
+          });
+
+          if (createResponse.data) {
+            setUser(createResponse.data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to sync user:', error);
+      } finally {
+        setUserLoading(false);
+      }
+    };
+
+    syncUser();
+  }, [isLoaded, isSignedIn, clerkUser]);
+
+  const refreshUser = async () => {
+    if (!isSignedIn) return;
+
+    const response = await usersApi.get();
+    if (response.data) {
+      setUser(response.data);
+    }
+  };
+
+  const value: AuthContextType = {
+    isLoaded: isLoaded && !userLoading,
+    isSignedIn: isSignedIn ?? false,
+    userId: userId ?? null,
+    userEmail: clerkUser?.primaryEmailAddress?.emailAddress ?? null,
+    userName: clerkUser?.firstName ?? null,
+    user,
+    refreshUser,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
