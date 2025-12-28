@@ -5,6 +5,9 @@ import {
   UpdateUserInput,
   UserGoals,
   UpdateGoalsInput,
+  Food,
+  CustomFood,
+  CreateCustomFoodInput,
   FoodEntry,
   CreateFoodEntryInput,
   UpdateFoodEntryInput,
@@ -157,6 +160,54 @@ export const foodEntriesApi = {
  */
 export const dailySummaryApi = {
   get: (date: string) => apiRequest<DailySummary>(`/daily-summary?date=${date}`),
+};
+
+/**
+ * Custom Foods API
+ */
+export const customFoodsApi = {
+  list: (query?: string) =>
+    apiRequest<CustomFood[]>(query ? `/custom-foods?q=${encodeURIComponent(query)}` : '/custom-foods'),
+  get: (id: string) => apiRequest<CustomFood>(`/custom-foods/${id}`),
+  create: (data: CreateCustomFoodInput) =>
+    apiRequest<CustomFood>('/custom-foods', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: Partial<CreateCustomFoodInput>) =>
+    apiRequest<CustomFood>(`/custom-foods/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    apiRequest<void>(`/custom-foods/${id}`, {
+      method: 'DELETE',
+    }),
+};
+
+/**
+ * Foods API (base food database)
+ */
+export const foodsApi = {
+  search: (query: string, limit = 20) =>
+    apiRequest<Food[]>(`/foods?q=${encodeURIComponent(query)}&limit=${limit}`),
+  get: (id: string) => apiRequest<Food>(`/foods/${id}`),
+};
+
+/**
+ * USDA Food Search Result
+ */
+export interface USDASearchResult {
+  foods: Food[];
+  totalHits: number;
+}
+
+/**
+ * USDA Foods API (external USDA database)
+ */
+export const usdaApi = {
+  search: (query: string, limit = 20) =>
+    apiRequest<USDASearchResult>(`/usda-search?q=${encodeURIComponent(query)}&limit=${limit}`),
 };
 
 // Export for file uploads if needed

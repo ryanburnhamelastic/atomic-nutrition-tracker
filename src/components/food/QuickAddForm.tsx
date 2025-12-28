@@ -1,24 +1,27 @@
 import { useState } from 'react';
-import { MealType, CreateFoodEntryInput } from '../../types';
+import { FoodEntry, MealType, CreateFoodEntryInput, UpdateFoodEntryInput } from '../../types';
 import { foodEntriesApi } from '../../lib/api';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 interface QuickAddFormProps {
   date: string;
   mealType: MealType;
+  editEntry?: FoodEntry | null;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export default function QuickAddForm({ date, mealType, onSuccess, onCancel }: QuickAddFormProps) {
-  const [name, setName] = useState('');
-  const [servingSize, setServingSize] = useState('100');
-  const [servingUnit, setServingUnit] = useState('g');
-  const [servings, setServings] = useState('1');
-  const [calories, setCalories] = useState('');
-  const [protein, setProtein] = useState('0');
-  const [carbs, setCarbs] = useState('0');
-  const [fat, setFat] = useState('0');
+export default function QuickAddForm({ date, mealType, editEntry, onSuccess, onCancel }: QuickAddFormProps) {
+  const isEditing = Boolean(editEntry);
+
+  const [name, setName] = useState(editEntry?.name || '');
+  const [servingSize, setServingSize] = useState(String(editEntry?.serving_size || '100'));
+  const [servingUnit, setServingUnit] = useState(editEntry?.serving_unit || 'g');
+  const [servings, setServings] = useState(String(editEntry?.servings || '1'));
+  const [calories, setCalories] = useState(String(editEntry?.calories || ''));
+  const [protein, setProtein] = useState(String(editEntry?.protein || '0'));
+  const [carbs, setCarbs] = useState(String(editEntry?.carbs || '0'));
+  const [fat, setFat] = useState(String(editEntry?.fat || '0'));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,20 +41,36 @@ export default function QuickAddForm({ date, mealType, onSuccess, onCancel }: Qu
 
     setLoading(true);
 
-    const data: CreateFoodEntryInput = {
-      date,
-      mealType,
-      servings: Number(servings),
-      name: name.trim(),
-      servingSize: Number(servingSize),
-      servingUnit: servingUnit.trim(),
-      calories: Number(calories),
-      protein: Number(protein),
-      carbs: Number(carbs),
-      fat: Number(fat),
-    };
+    let response;
 
-    const response = await foodEntriesApi.create(data);
+    if (isEditing && editEntry) {
+      const updateData: UpdateFoodEntryInput = {
+        mealType,
+        servings: Number(servings),
+        name: name.trim(),
+        servingSize: Number(servingSize),
+        servingUnit: servingUnit.trim(),
+        calories: Number(calories),
+        protein: Number(protein),
+        carbs: Number(carbs),
+        fat: Number(fat),
+      };
+      response = await foodEntriesApi.update(editEntry.id, updateData);
+    } else {
+      const createData: CreateFoodEntryInput = {
+        date,
+        mealType,
+        servings: Number(servings),
+        name: name.trim(),
+        servingSize: Number(servingSize),
+        servingUnit: servingUnit.trim(),
+        calories: Number(calories),
+        protein: Number(protein),
+        carbs: Number(carbs),
+        fat: Number(fat),
+      };
+      response = await foodEntriesApi.create(createData);
+    }
 
     setLoading(false);
 
@@ -198,7 +217,7 @@ export default function QuickAddForm({ date, mealType, onSuccess, onCancel }: Qu
           className="btn-primary flex-1"
           disabled={loading}
         >
-          {loading ? <LoadingSpinner size="sm" /> : 'Add Food'}
+          {loading ? <LoadingSpinner size="sm" /> : isEditing ? 'Update' : 'Add Food'}
         </button>
       </div>
     </form>

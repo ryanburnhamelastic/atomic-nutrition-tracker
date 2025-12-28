@@ -155,6 +155,13 @@ export interface CreateFoodEntryInput {
 export interface UpdateFoodEntryInput {
   servings?: number;
   mealType?: MealType;
+  name?: string;
+  servingSize?: number;
+  servingUnit?: string;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
 }
 
 /**

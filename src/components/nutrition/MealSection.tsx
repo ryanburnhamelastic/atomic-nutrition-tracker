@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
-import { MealSummary, MealType } from '../../types';
+import { FoodEntry, MealSummary, MealType } from '../../types';
 import FoodEntryCard from './FoodEntryCard';
 
 interface MealSectionProps {
   mealType: MealType;
   summary: MealSummary;
+  onEditEntry?: (entry: FoodEntry) => void;
   onDeleteEntry?: (id: string) => void;
 }
 
@@ -22,7 +23,7 @@ const mealIcons: Record<MealType, string> = {
   snack: '🍿',
 };
 
-export default function MealSection({ mealType, summary, onDeleteEntry }: MealSectionProps) {
+export default function MealSection({ mealType, summary, onEditEntry, onDeleteEntry }: MealSectionProps) {
   const hasEntries = summary.entries.length > 0;
 
   return (
@@ -45,6 +46,7 @@ export default function MealSection({ mealType, summary, onDeleteEntry }: MealSe
             <FoodEntryCard
               key={entry.id}
               entry={entry}
+              onEdit={onEditEntry}
               onDelete={onDeleteEntry}
             />
           ))}

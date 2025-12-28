@@ -74,6 +74,11 @@ export async function initDb(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_foods_name_search ON foods USING gin(to_tsvector('english', name))
   `;
 
+  // Unique constraint for upsert operations (only for base foods without brand)
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_foods_name_unique ON foods(name) WHERE brand IS NULL
+  `;
+
   // User custom foods
   await sql`
     CREATE TABLE IF NOT EXISTS custom_foods (

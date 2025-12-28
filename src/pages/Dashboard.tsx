@@ -1,10 +1,11 @@
 import { useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useNutrition } from '../contexts/NutritionContext';
 import { foodEntriesApi } from '../lib/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import DailyProgress from '../components/nutrition/DailyProgress';
 import MealSection from '../components/nutrition/MealSection';
-import { MealType } from '../types';
+import { FoodEntry, MealType } from '../types';
 
 // Helper to format date for display
 function formatDate(dateString: string): string {
@@ -36,6 +37,7 @@ function addDays(dateString: string, days: number): string {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const {
     selectedDate,
     setSelectedDate,
@@ -44,6 +46,11 @@ export default function Dashboard() {
     summaryLoading,
     refreshSummary,
   } = useNutrition();
+
+  // Handle edit entry - navigate to LogFood with entry data
+  const handleEditEntry = useCallback((entry: FoodEntry) => {
+    navigate('/log', { state: { editEntry: entry } });
+  }, [navigate]);
 
   // Handle delete entry
   const handleDeleteEntry = useCallback(async (entryId: string) => {
@@ -125,6 +132,7 @@ export default function Dashboard() {
               key={mealType}
               mealType={mealType}
               summary={summary.byMeal[mealType]}
+              onEditEntry={handleEditEntry}
               onDeleteEntry={handleDeleteEntry}
             />
           ))}

@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useNutrition } from '../contexts/NutritionContext';
+import FoodSearchSection from '../components/food/FoodSearchSection';
 import QuickAddForm from '../components/food/QuickAddForm';
-import { MealType } from '../types';
+import { FoodEntry, MealType } from '../types';
 
 const mealLabels: Record<MealType, string> = {
   breakfast: 'Breakfast',
@@ -11,17 +12,26 @@ const mealLabels: Record<MealType, string> = {
   snack: 'Snack',
 };
 
+interface LocationState {
+  editEntry?: FoodEntry;
+}
+
 export default function LogFood() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const { selectedDate, refreshSummary } = useNutrition();
 
-  // Get meal type from URL params, default to snack
+  // Get edit entry from navigation state
+  const editEntry = (location.state as LocationState)?.editEntry || null;
+
+  // Get meal type from URL params, edit entry, or default to snack
   const mealParam = searchParams.get('meal') as MealType | null;
   const [selectedMeal, setSelectedMeal] = useState<MealType>(
-    mealParam && ['breakfast', 'lunch', 'dinner', 'snack'].includes(mealParam)
+    editEntry?.meal_type ||
+    (mealParam && ['breakfast', 'lunch', 'dinner', 'snack'].includes(mealParam)
       ? mealParam
-      : 'snack'
+      : 'snack')
   );
 
   const handleSuccess = async () => {
@@ -37,7 +47,9 @@ export default function LogFood() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Add Food</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          {editEntry ? 'Edit Food' : 'Add Food'}
+        </h1>
         <p className="text-gray-500 dark:text-gray-400">
           {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
             weekday: 'long',
@@ -68,21 +80,28 @@ export default function LogFood() {
         </div>
       </div>
 
+      {/* Food Search (only show when not editing) */}
+      {!editEntry && (
+        <FoodSearchSection
+          date={selectedDate}
+          mealType={selectedMeal}
+          onSuccess={handleSuccess}
+        />
+      )}
+
       {/* Quick Add Form */}
       <div className="card">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Quick Add
+          {editEntry ? 'Edit Entry' : 'Quick Add'}
         </h2>
         <QuickAddForm
           date={selectedDate}
           mealType={selectedMeal}
+          editEntry={editEntry}
           onSuccess={handleSuccess}
           onCancel={handleCancel}
         />
       </div>
-
-      {/* Future: Food Search Section */}
-      {/* This will be added in Phase 2/3 */}
     </div>
   );
 }
