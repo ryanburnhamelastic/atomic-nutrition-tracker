@@ -1,0 +1,88 @@
+import { useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNutrition } from '../contexts/NutritionContext';
+import QuickAddForm from '../components/food/QuickAddForm';
+import { MealType } from '../types';
+
+const mealLabels: Record<MealType, string> = {
+  breakfast: 'Breakfast',
+  lunch: 'Lunch',
+  dinner: 'Dinner',
+  snack: 'Snack',
+};
+
+export default function LogFood() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { selectedDate, refreshSummary } = useNutrition();
+
+  // Get meal type from URL params, default to snack
+  const mealParam = searchParams.get('meal') as MealType | null;
+  const [selectedMeal, setSelectedMeal] = useState<MealType>(
+    mealParam && ['breakfast', 'lunch', 'dinner', 'snack'].includes(mealParam)
+      ? mealParam
+      : 'snack'
+  );
+
+  const handleSuccess = async () => {
+    await refreshSummary();
+    navigate('/');
+  };
+
+  const handleCancel = () => {
+    navigate('/');
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Add Food</h1>
+        <p className="text-gray-500 dark:text-gray-400">
+          {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+          })}
+        </p>
+      </div>
+
+      {/* Meal Type Selector */}
+      <div>
+        <label className="label">Meal</label>
+        <div className="grid grid-cols-4 gap-2">
+          {(['breakfast', 'lunch', 'dinner', 'snack'] as MealType[]).map((meal) => (
+            <button
+              key={meal}
+              type="button"
+              onClick={() => setSelectedMeal(meal)}
+              className={`py-2 px-3 text-sm font-medium rounded-lg transition-colors ${
+                selectedMeal === meal
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              {mealLabels[meal]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Add Form */}
+      <div className="card">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Quick Add
+        </h2>
+        <QuickAddForm
+          date={selectedDate}
+          mealType={selectedMeal}
+          onSuccess={handleSuccess}
+          onCancel={handleCancel}
+        />
+      </div>
+
+      {/* Future: Food Search Section */}
+      {/* This will be added in Phase 2/3 */}
+    </div>
+  );
+}

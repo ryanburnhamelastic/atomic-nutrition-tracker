@@ -1,4 +1,15 @@
-import { ApiResponse, User, CreateUserInput, UpdateUserInput } from '../types';
+import {
+  ApiResponse,
+  User,
+  CreateUserInput,
+  UpdateUserInput,
+  UserGoals,
+  UpdateGoalsInput,
+  FoodEntry,
+  CreateFoodEntryInput,
+  UpdateFoodEntryInput,
+  DailySummary,
+} from '../types';
 
 const API_BASE = '/api';
 
@@ -107,26 +118,46 @@ export const usersApi = {
     }),
 };
 
-// TODO: Add your application-specific API modules here
-// Example:
-// export const itemsApi = {
-//   list: () => apiRequest<Item[]>('/items'),
-//   get: (id: string) => apiRequest<Item>(`/items/${id}`),
-//   create: (data: CreateItemInput) =>
-//     apiRequest<Item>('/items', {
-//       method: 'POST',
-//       body: JSON.stringify(data),
-//     }),
-//   update: (id: string, data: UpdateItemInput) =>
-//     apiRequest<Item>(`/items/${id}`, {
-//       method: 'PUT',
-//       body: JSON.stringify(data),
-//     }),
-//   delete: (id: string) =>
-//     apiRequest<void>(`/items/${id}`, {
-//       method: 'DELETE',
-//     }),
-// };
+/**
+ * Goals API
+ */
+export const goalsApi = {
+  get: () => apiRequest<UserGoals>('/goals'),
+  update: (data: UpdateGoalsInput) =>
+    apiRequest<UserGoals>('/goals', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+};
+
+/**
+ * Food Entries API
+ */
+export const foodEntriesApi = {
+  listByDate: (date: string) =>
+    apiRequest<FoodEntry[]>(`/food-entries?date=${date}`),
+  create: (data: CreateFoodEntryInput) =>
+    apiRequest<FoodEntry>('/food-entries', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: UpdateFoodEntryInput) =>
+    apiRequest<FoodEntry>(`/food-entries/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    apiRequest<void>(`/food-entries/${id}`, {
+      method: 'DELETE',
+    }),
+};
+
+/**
+ * Daily Summary API
+ */
+export const dailySummaryApi = {
+  get: (date: string) => apiRequest<DailySummary>(`/daily-summary?date=${date}`),
+};
 
 // Export for file uploads if needed
 export { apiUpload };

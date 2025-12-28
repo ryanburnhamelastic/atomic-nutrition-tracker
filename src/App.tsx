@@ -2,9 +2,11 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ClerkProvider } from '@clerk/clerk-react';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { NutritionProvider } from './contexts/NutritionContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Layout from './components/layout/Layout';
-import Home from './pages/Home';
+import Dashboard from './pages/Dashboard';
+import LogFood from './pages/LogFood';
 import Settings from './pages/Settings';
 
 // Get Clerk publishable key from environment
@@ -19,25 +21,24 @@ export default function App() {
     <ClerkProvider publishableKey={clerkPubKey}>
       <AuthProvider>
         <ThemeProvider>
-          <BrowserRouter>
-            <Routes>
-              {/* Protected routes with layout */}
-              <Route
-                element={
-                  <ProtectedRoute>
-                    <Layout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route path="/" element={<Home />} />
-                <Route path="/settings" element={<Settings />} />
-                {/* TODO: Add more routes here */}
-              </Route>
-
-              {/* Public routes (if needed) */}
-              {/* <Route path="/public" element={<PublicPage />} /> */}
-            </Routes>
-          </BrowserRouter>
+          <NutritionProvider>
+            <BrowserRouter>
+              <Routes>
+                {/* Protected routes with layout */}
+                <Route
+                  element={
+                    <ProtectedRoute>
+                      <Layout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/log" element={<LogFood />} />
+                  <Route path="/settings" element={<Settings />} />
+                </Route>
+              </Routes>
+            </BrowserRouter>
+          </NutritionProvider>
         </ThemeProvider>
       </AuthProvider>
     </ClerkProvider>

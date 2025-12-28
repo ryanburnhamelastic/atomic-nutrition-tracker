@@ -37,13 +37,170 @@ export interface UpdateUserInput {
   lastName?: string;
 }
 
-// TODO: Add your application-specific types here
-// Example:
-// export interface Item {
-//   id: string;
-//   user_id: string;
-//   name: string;
-//   description: string | null;
-//   created_at: string;
-//   updated_at: string;
-// }
+// ============================================
+// Nutrition Tracking Types
+// ============================================
+
+/**
+ * User nutrition goals
+ */
+export interface UserGoals {
+  id: string;
+  user_id: string;
+  calorie_target: number;
+  protein_target: number;
+  carbs_target: number;
+  fat_target: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpdateGoalsInput {
+  calorieTarget?: number;
+  proteinTarget?: number;
+  carbsTarget?: number;
+  fatTarget?: number;
+}
+
+/**
+ * Food from base database (system-wide)
+ */
+export interface Food {
+  id: string;
+  name: string;
+  brand: string | null;
+  serving_size: number;
+  serving_unit: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  is_verified: boolean;
+  source: string | null;
+  created_at: string;
+}
+
+/**
+ * User-created custom food
+ */
+export interface CustomFood {
+  id: string;
+  user_id: string;
+  name: string;
+  brand: string | null;
+  serving_size: number;
+  serving_unit: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCustomFoodInput {
+  name: string;
+  brand?: string;
+  servingSize: number;
+  servingUnit: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+/**
+ * Meal type categories
+ */
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+
+/**
+ * Logged food entry
+ */
+export interface FoodEntry {
+  id: string;
+  user_id: string;
+  food_id: string | null;
+  custom_food_id: string | null;
+  date: string;
+  meal_type: MealType;
+  servings: number;
+  name: string;
+  serving_size: number;
+  serving_unit: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateFoodEntryInput {
+  date: string;
+  mealType: MealType;
+  foodId?: string;
+  customFoodId?: string;
+  servings: number;
+  // Manual entry fields (required if no foodId/customFoodId)
+  name?: string;
+  servingSize?: number;
+  servingUnit?: string;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+}
+
+export interface UpdateFoodEntryInput {
+  servings?: number;
+  mealType?: MealType;
+}
+
+/**
+ * Nutrition totals
+ */
+export interface NutritionTotals {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+/**
+ * Meal summary with entries
+ */
+export interface MealSummary extends NutritionTotals {
+  entries: FoodEntry[];
+}
+
+/**
+ * Daily nutrition summary
+ */
+export interface DailySummary {
+  date: string;
+  totals: NutritionTotals;
+  byMeal: {
+    breakfast: MealSummary;
+    lunch: MealSummary;
+    dinner: MealSummary;
+    snack: MealSummary;
+  };
+}
+
+/**
+ * Daily data point for reports
+ */
+export interface DailyDataPoint extends NutritionTotals {
+  date: string;
+}
+
+/**
+ * Report data for weekly/monthly views
+ */
+export interface ReportData {
+  startDate: string;
+  endDate: string;
+  averages: NutritionTotals;
+  dailyData: DailyDataPoint[];
+}

@@ -12,8 +12,7 @@ export default function Header() {
           {/* Logo / Home Link */}
           <Link to="/" className="flex items-center space-x-2">
             <span className="text-xl font-bold text-slate-900 dark:text-white">
-              {/* TODO: Replace with your app name */}
-              Template App
+              Atomic Nutrition
             </span>
           </Link>
 
@@ -23,9 +22,14 @@ export default function Header() {
               to="/"
               className="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors"
             >
-              Home
+              Dashboard
             </Link>
-            {/* TODO: Add more navigation links */}
+            <Link
+              to="/log"
+              className="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors"
+            >
+              Add Food
+            </Link>
             <Link
               to="/settings"
               className="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors"

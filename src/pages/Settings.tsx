@@ -1,9 +1,54 @@
+import { useState, useEffect } from 'react';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useNutrition } from '../contexts/NutritionContext';
+import { goalsApi } from '../lib/api';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 
 export default function Settings() {
   const { userEmail, userName, user } = useAuthContext();
   const { isDarkMode, toggleTheme } = useTheme();
+  const { goals, goalsLoading, refreshGoals } = useNutrition();
+
+  // Goals form state
+  const [calorieTarget, setCalorieTarget] = useState('2000');
+  const [proteinTarget, setProteinTarget] = useState('150');
+  const [carbsTarget, setCarbsTarget] = useState('250');
+  const [fatTarget, setFatTarget] = useState('65');
+  const [savingGoals, setSavingGoals] = useState(false);
+  const [goalsMessage, setGoalsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Populate form when goals load
+  useEffect(() => {
+    if (goals) {
+      setCalorieTarget(String(goals.calorie_target));
+      setProteinTarget(String(goals.protein_target));
+      setCarbsTarget(String(goals.carbs_target));
+      setFatTarget(String(goals.fat_target));
+    }
+  }, [goals]);
+
+  const handleSaveGoals = async () => {
+    setSavingGoals(true);
+    setGoalsMessage(null);
+
+    const response = await goalsApi.update({
+      calorieTarget: Number(calorieTarget),
+      proteinTarget: Number(proteinTarget),
+      carbsTarget: Number(carbsTarget),
+      fatTarget: Number(fatTarget),
+    });
+
+    setSavingGoals(false);
+
+    if (response.error) {
+      setGoalsMessage({ type: 'error', text: response.error });
+    } else {
+      setGoalsMessage({ type: 'success', text: 'Goals saved successfully!' });
+      refreshGoals();
+      setTimeout(() => setGoalsMessage(null), 3000);
+    }
+  };
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -32,6 +77,90 @@ export default function Settings() {
             <p className="mt-1 text-slate-900 dark:text-white">{userEmail}</p>
           </div>
         </div>
+      </section>
+
+      {/* Nutrition Goals Section */}
+      <section className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 border border-slate-200 dark:border-slate-700 mb-6">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+          Nutrition Goals
+        </h2>
+        {goalsLoading ? (
+          <div className="flex justify-center py-4">
+            <LoadingSpinner />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {goalsMessage && (
+              <div className={goalsMessage.type === 'success' ? 'success-message' : 'error-message'}>
+                {goalsMessage.text}
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="calorieTarget" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Daily Calorie Target
+              </label>
+              <input
+                id="calorieTarget"
+                type="number"
+                className="input mt-1"
+                value={calorieTarget}
+                onChange={(e) => setCalorieTarget(e.target.value)}
+                min="0"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label htmlFor="proteinTarget" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Protein (g)
+                </label>
+                <input
+                  id="proteinTarget"
+                  type="number"
+                  className="input mt-1"
+                  value={proteinTarget}
+                  onChange={(e) => setProteinTarget(e.target.value)}
+                  min="0"
+                />
+              </div>
+              <div>
+                <label htmlFor="carbsTarget" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Carbs (g)
+                </label>
+                <input
+                  id="carbsTarget"
+                  type="number"
+                  className="input mt-1"
+                  value={carbsTarget}
+                  onChange={(e) => setCarbsTarget(e.target.value)}
+                  min="0"
+                />
+              </div>
+              <div>
+                <label htmlFor="fatTarget" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Fat (g)
+                </label>
+                <input
+                  id="fatTarget"
+                  type="number"
+                  className="input mt-1"
+                  value={fatTarget}
+                  onChange={(e) => setFatTarget(e.target.value)}
+                  min="0"
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={handleSaveGoals}
+              disabled={savingGoals}
+              className="btn-primary w-full"
+            >
+              {savingGoals ? <LoadingSpinner size="sm" /> : 'Save Goals'}
+            </button>
+          </div>
+        )}
       </section>
 
       {/* Preferences Section */}
@@ -63,8 +192,6 @@ export default function Settings() {
               />
             </button>
           </div>
-
-          {/* TODO: Add more preference toggles */}
         </div>
       </section>
 

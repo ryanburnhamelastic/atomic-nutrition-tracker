@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { useAuth, useUser } from '@clerk/clerk-react';
+import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-react';
 import { User } from '../types';
 import { usersApi, setAuthTokenGetter } from '../lib/api';
 
@@ -23,12 +23,15 @@ export function useAuthContext() {
   return context;
 }
 
+// Alias for consistency with other contexts
+export const useAuth = useAuthContext;
+
 interface AuthProviderProps {
   children: ReactNode;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const { isLoaded, isSignedIn, userId, getToken } = useAuth();
+  const { isLoaded, isSignedIn, userId, getToken } = useClerkAuth();
   const { user: clerkUser } = useUser();
   const [user, setUser] = useState<User | null>(null);
   const [userLoading, setUserLoading] = useState(true);

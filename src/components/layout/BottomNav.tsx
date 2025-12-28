@@ -1,15 +1,16 @@
 import { Link, useLocation } from 'react-router-dom';
+import { ReactNode } from 'react';
 
 interface NavItem {
   path: string;
   label: string;
-  icon: JSX.Element;
+  icon: ReactNode;
 }
 
 const navItems: NavItem[] = [
   {
     path: '/',
-    label: 'Home',
+    label: 'Dashboard',
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path
@@ -21,17 +22,15 @@ const navItems: NavItem[] = [
       </svg>
     ),
   },
-  // TODO: Add more navigation items for your app
-  // Example:
-  // {
-  //   path: '/items',
-  //   label: 'Items',
-  //   icon: (
-  //     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-  //       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-  //     </svg>
-  //   ),
-  // },
+  {
+    path: '/log',
+    label: 'Add Food',
+    icon: (
+      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+      </svg>
+    ),
+  },
   {
     path: '/settings',
     label: 'Settings',

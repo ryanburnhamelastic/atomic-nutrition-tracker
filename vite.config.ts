@@ -10,10 +10,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        // TODO: Update these values for your app
-        name: 'Template App',
-        short_name: 'Template',
-        description: 'A modern web application template',
+        name: 'Atomic Nutrition Tracker',
+        short_name: 'Atomic',
+        description: 'Track your daily nutrition, calories, and macros',
         theme_color: '#1e293b',
         background_color: '#0f172a',
         display: 'standalone',
