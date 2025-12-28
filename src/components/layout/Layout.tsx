@@ -6,7 +6,7 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <Header />
-      <main className="pb-20 md:pb-4">
+      <main className="max-w-3xl mx-auto px-4 py-6 pb-24 md:pb-6">
         <Outlet />
       </main>
       <BottomNav />
