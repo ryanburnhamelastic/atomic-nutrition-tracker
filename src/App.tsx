@@ -8,6 +8,7 @@ import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import LogFood from './pages/LogFood';
 import MyFoods from './pages/MyFoods';
+import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 
 // Get Clerk publishable key from environment
@@ -40,6 +41,7 @@ export default function App() {
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/log" element={<LogFood />} />
                   <Route path="/my-foods" element={<MyFoods />} />
+                  <Route path="/analytics" element={<Analytics />} />
                   <Route path="/settings" element={<Settings />} />
                 </Route>
               </Routes>

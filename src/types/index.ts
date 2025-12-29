@@ -288,3 +288,73 @@ export interface GeneratedGoals {
   fatTarget: number;
   explanation: string;
 }
+
+// ============================================
+// Analytics Types
+// ============================================
+
+/**
+ * Weight data point for trend chart
+ */
+export interface WeightDataPoint {
+  date: string;
+  weight: number;
+}
+
+/**
+ * Daily nutrition data with compliance
+ */
+export interface DailyNutritionData {
+  date: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  isCompliant: boolean;
+}
+
+/**
+ * Compliance metrics
+ */
+export interface ComplianceMetrics {
+  totalDays: number;
+  compliantDays: number;
+  complianceRate: number;
+  currentStreak: number;
+  longestStreak: number;
+}
+
+/**
+ * Weekly nutrition averages
+ */
+export interface WeeklyAverage {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  compliance: number;
+}
+
+/**
+ * Complete analytics response
+ */
+export interface AnalyticsData {
+  dateRange: {
+    start: string;
+    end: string;
+    days: number;
+  };
+  goals: {
+    calorie_target: number;
+    protein_target: number;
+    carbs_target: number;
+    fat_target: number;
+  };
+  weightTrend: WeightDataPoint[];
+  dailyNutrition: DailyNutritionData[];
+  compliance: ComplianceMetrics;
+  weeklySummary: {
+    thisWeek: WeeklyAverage;
+    lastWeek: WeeklyAverage;
+  };
+}

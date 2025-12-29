@@ -18,6 +18,7 @@ import {
   GeneratedGoals,
   WeightEntry,
   CreateWeightEntryInput,
+  AnalyticsData,
 } from '../types';
 
 const API_BASE = '/api';
@@ -257,6 +258,17 @@ export const geminiApi = {
       method: 'POST',
       body: JSON.stringify(input),
     }),
+};
+
+/**
+ * Analytics API
+ */
+export const analyticsApi = {
+  get: (days = 30, endDate?: string) => {
+    const params = new URLSearchParams({ days: days.toString() });
+    if (endDate) params.append('endDate', endDate);
+    return apiRequest<AnalyticsData>(`/analytics?${params.toString()}`);
+  },
 };
 
 // Export for file uploads if needed
