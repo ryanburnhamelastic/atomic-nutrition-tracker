@@ -36,15 +36,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [userLoading, setUserLoading] = useState(true);
 
-  // Use refs to avoid stale closures in token getter
-  const isSignedInRef = useRef(isSignedIn);
+  // Use ref to avoid stale closures in token getter
   const getTokenRef = useRef(getToken);
 
-  // Keep refs in sync with current values
-  useEffect(() => {
-    isSignedInRef.current = isSignedIn;
-  }, [isSignedIn]);
-
+  // Keep ref in sync with current getToken function
   useEffect(() => {
     getTokenRef.current = getToken;
   }, [getToken]);
@@ -52,22 +47,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Set up token getter for API calls - only once on mount
   useEffect(() => {
     setAuthTokenGetter(async () => {
-      console.log('[Auth] Token requested, isSignedIn:', isSignedInRef.current);
-      // Read current value from ref to avoid stale closure
-      if (isSignedInRef.current !== true) {
-        console.log('[Auth] Not signed in or auth not loaded, returning null');
-        return null;
-      }
+      console.log('[Auth] Token requested');
       try {
+        // Just try to get the token - Clerk will return null if not signed in
         const token = await getTokenRef.current();
         console.log('[Auth] Got token from Clerk:', token ? 'Yes' : 'No');
+        if (!token) {
+          console.log('[Auth] Token is null or undefined');
+          return null;
+        }
         return token;
       } catch (error) {
         console.error('[Auth] Error getting token:', error);
         return null;
       }
     });
-  }, []); // Empty deps - set once on mount, refs keep it updated
+  }, []); // Empty deps - set once on mount, ref keeps it updated
 
   // Fetch or create user on sign in
   useEffect(() => {
