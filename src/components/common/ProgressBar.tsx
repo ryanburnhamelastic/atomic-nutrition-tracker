@@ -3,8 +3,9 @@ interface ProgressBarProps {
   max: number;
   label?: string;
   showValues?: boolean;
-  color?: 'primary' | 'success' | 'warning' | 'danger';
+  color?: 'primary' | 'success' | 'warning' | 'danger' | 'locked';
   size?: 'sm' | 'md' | 'lg';
+  locked?: boolean;
 }
 
 const colorClasses = {
@@ -12,6 +13,7 @@ const colorClasses = {
   success: 'bg-green-500',
   warning: 'bg-yellow-500',
   danger: 'bg-red-500',
+  locked: 'bg-gray-400 dark:bg-gray-500',
 };
 
 const sizeClasses = {
@@ -27,12 +29,17 @@ export default function ProgressBar({
   showValues = true,
   color = 'primary',
   size = 'md',
+  locked = false,
 }: ProgressBarProps) {
   const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   const isOver = value > max;
 
-  // Change color to danger if over target
-  const barColor = isOver ? 'bg-red-500' : colorClasses[color];
+  // Use locked color if locked, danger if over, otherwise normal color
+  const barColor = locked
+    ? colorClasses.locked
+    : isOver
+      ? 'bg-red-500'
+      : colorClasses[color];
 
   return (
     <div className="w-full">

@@ -25,7 +25,8 @@ export default function WeightLogSection() {
 
   // Check if today has an entry
   useEffect(() => {
-    const today = entries.find(e => e.date === selectedDate);
+    // Normalize entry dates (they may come as ISO timestamps from the database)
+    const today = entries.find(e => e.date.split('T')[0] === selectedDate);
     setTodayEntry(today || null);
     if (today) {
       // Convert to display units
@@ -75,8 +76,14 @@ export default function WeightLogSection() {
     return `${(weightKg * KG_TO_LBS).toFixed(1)} lbs`;
   };
 
+  // Normalize date string to YYYY-MM-DD format (handles both ISO timestamps and date strings)
+  const normalizeDate = (dateStr: string): string => {
+    return dateStr.split('T')[0];
+  };
+
   const formatDate = (dateStr: string): string => {
-    const date = new Date(dateStr + 'T00:00:00');
+    const normalized = normalizeDate(dateStr);
+    const date = new Date(normalized + 'T00:00:00');
     const today = new Date(selectedDate + 'T00:00:00');
     const diffDays = Math.round((today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
 
