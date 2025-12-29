@@ -106,7 +106,7 @@ export default function Dashboard() {
     // Load current weight
     const weightResponse = await weightEntriesApi.list(undefined, undefined, 1);
     if (weightResponse.data && weightResponse.data.length > 0) {
-      setCurrentWeight(weightResponse.data[0].weight_kg);
+      setCurrentWeight(Number(weightResponse.data[0].weight_kg));
     }
 
     setProgramLoading(false);

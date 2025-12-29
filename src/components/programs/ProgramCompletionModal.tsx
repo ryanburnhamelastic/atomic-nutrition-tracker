@@ -17,8 +17,8 @@ export default function ProgramCompletionModal({
   if (!isOpen || !completedProgram) return null;
 
   const template = PROGRAM_TEMPLATES.find(t => t.id === completedProgram.program_id);
-  const startWeight = completedProgram.starting_weight_kg;
-  const endWeight = completedProgram.ending_weight_kg;
+  const startWeight = completedProgram.starting_weight_kg ? Number(completedProgram.starting_weight_kg) : null;
+  const endWeight = completedProgram.ending_weight_kg ? Number(completedProgram.ending_weight_kg) : null;
   const weightChange = startWeight && endWeight ? endWeight - startWeight : null;
 
   return (

@@ -24,8 +24,8 @@ export default function ActiveProgramCard({ program, currentWeight, onChangeProg
   const progressPercent = Math.min(100, Math.round((daysPassed / totalDays) * 100));
 
   // Calculate weight progress
-  const startWeight = program.starting_weight_kg;
-  const targetWeight = program.target_weight_kg;
+  const startWeight = program.starting_weight_kg ? Number(program.starting_weight_kg) : null;
+  const targetWeight = program.target_weight_kg ? Number(program.target_weight_kg) : null;
   const weightChange = currentWeight && startWeight ? currentWeight - startWeight : null;
 
   return (
