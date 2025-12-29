@@ -34,6 +34,9 @@ export default function Settings() {
     goal: 'maintain',
   });
 
+  // Track if we're loading initial data to prevent auto-calc from overwriting
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
   // Populate form when goals load
   useEffect(() => {
     if (goals) {
@@ -42,20 +45,23 @@ export default function Settings() {
       setCarbsTarget(String(goals.carbs_target));
       setFatTarget(String(goals.fat_target));
       setUseMetric(goals.use_metric);
+      // Mark initial load as complete after a short delay
+      setTimeout(() => setIsInitialLoad(false), 100);
     }
   }, [goals]);
 
   // Auto-calculate calories from macros when enabled
   // Formula: Protein (4 cal/g) + Carbs (4 cal/g) + Fat (9 cal/g)
+  // Don't run during initial load to avoid overwriting saved calorie target
   useEffect(() => {
-    if (autoCalcCalories) {
+    if (autoCalcCalories && !isInitialLoad) {
       const protein = Number(proteinTarget) || 0;
       const carbs = Number(carbsTarget) || 0;
       const fat = Number(fatTarget) || 0;
       const calculatedCalories = (protein * 4) + (carbs * 4) + (fat * 9);
       setCalorieTarget(String(Math.round(calculatedCalories)));
     }
-  }, [proteinTarget, carbsTarget, fatTarget, autoCalcCalories]);
+  }, [proteinTarget, carbsTarget, fatTarget, autoCalcCalories, isInitialLoad]);
 
   const handleSaveGoals = async () => {
     setSavingGoals(true);
