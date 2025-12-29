@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useNutrition } from '../contexts/NutritionContext';
 import { foodEntriesApi, userStatsApi, userProgramsApi, weightEntriesApi } from '../lib/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -44,6 +44,7 @@ function addDays(dateString: string, days: number): string {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     selectedDate,
     setSelectedDate,
@@ -52,6 +53,16 @@ export default function Dashboard() {
     summaryLoading,
     refreshSummary,
   } = useNutrition();
+
+  // Refresh data when returning from food logging
+  useEffect(() => {
+    const state = location.state as { refreshData?: boolean } | null;
+    if (state?.refreshData) {
+      refreshSummary();
+      // Clear the state to avoid refreshing on every render
+      window.history.replaceState({}, document.title);
+    }
+  }, [location, refreshSummary]);
 
   // User stats for streaks and achievements
   const [userStats, setUserStats] = useState<UserStats | null>(null);

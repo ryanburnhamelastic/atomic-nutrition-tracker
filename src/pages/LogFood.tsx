@@ -38,7 +38,7 @@ export default function LogFood() {
 
   const handleSuccess = async () => {
     await refreshSummary();
-    navigate('/');
+    navigate('/', { state: { refreshData: true } });
   };
 
   const handleCancel = () => {
