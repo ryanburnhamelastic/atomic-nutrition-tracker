@@ -122,6 +122,15 @@ export const PROGRAM_TEMPLATES: ProgramTemplate[] = [
     proteinPerKg: 1.6,
     fatPerKg: 0.8,
   },
+  {
+    id: 'custom',
+    name: 'Custom Program',
+    description: 'Set your own calorie and macro targets',
+    icon: '⚙️',
+    calorieModifier: 0, // Not used for custom
+    proteinPerKg: 0,    // Not used for custom
+    fatPerKg: 0,        // Not used for custom
+  },
 ];
 
 /**

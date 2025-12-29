@@ -25,6 +25,14 @@ export default function ProgramSelectionModal({ isOpen, onClose, onSuccess }: Pr
   });
   const [loading, setLoading] = useState(false);
 
+  // Custom program macros (used when selectedTemplateId === 'custom')
+  const [customMacros, setCustomMacros] = useState({
+    calories: 2000,
+    protein: 150,
+    carbs: 200,
+    fat: 65,
+  });
+
   if (!isOpen) return null;
 
   const selectedTemplate = PROGRAM_TEMPLATES.find(t => t.id === selectedTemplateId);
@@ -44,7 +52,10 @@ export default function ProgramSelectionModal({ isOpen, onClose, onSuccess }: Pr
 
     setLoading(true);
     try {
-      const macros = calculateMacrosFromTemplate(userStats, selectedTemplate);
+      // Use custom macros if custom template, otherwise calculate from template
+      const macros = selectedTemplate.id === 'custom'
+        ? customMacros
+        : calculateMacrosFromTemplate(userStats, selectedTemplate);
 
       await userProgramsApi.create({
         programId: selectedTemplate.id,
@@ -133,32 +144,58 @@ export default function ProgramSelectionModal({ isOpen, onClose, onSuccess }: Pr
           ) : (
             /* Configuration */
             <div className="space-y-6">
-              {/* User Stats Input */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Your Stats</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="label">Age</label>
-                    <input
-                      type="number"
-                      value={userStats.age}
-                      onChange={(e) => setUserStats({ ...userStats, age: Number(e.target.value) })}
-                      className="input"
-                    />
+              {selectedTemplate?.id === 'custom' ? (
+                /* Custom Macros Input */
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Set Your Macros</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Enter your custom calorie and macro targets for this program.
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="label">Calories</label>
+                      <input
+                        type="number"
+                        value={customMacros.calories}
+                        onChange={(e) => setCustomMacros({ ...customMacros, calories: Number(e.target.value) })}
+                        className="input"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Protein (g)</label>
+                      <input
+                        type="number"
+                        value={customMacros.protein}
+                        onChange={(e) => setCustomMacros({ ...customMacros, protein: Number(e.target.value) })}
+                        className="input"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Carbs (g)</label>
+                      <input
+                        type="number"
+                        value={customMacros.carbs}
+                        onChange={(e) => setCustomMacros({ ...customMacros, carbs: Number(e.target.value) })}
+                        className="input"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Fat (g)</label>
+                      <input
+                        type="number"
+                        value={customMacros.fat}
+                        onChange={(e) => setCustomMacros({ ...customMacros, fat: Number(e.target.value) })}
+                        className="input"
+                        min="0"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="label">Sex</label>
-                    <select
-                      value={userStats.sex}
-                      onChange={(e) => setUserStats({ ...userStats, sex: e.target.value as 'male' | 'female' })}
-                      className="input"
-                    >
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="label">Weight (kg)</label>
+                  {/* Only need weight for custom program */}
+                  <div className="mt-4 max-w-xs">
+                    <label className="label">Your Weight (kg)</label>
                     <input
                       type="number"
                       step="0.1"
@@ -166,56 +203,98 @@ export default function ProgramSelectionModal({ isOpen, onClose, onSuccess }: Pr
                       onChange={(e) => setUserStats({ ...userStats, weightKg: Number(e.target.value) })}
                       className="input"
                     />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Used for tracking weight progress
+                    </p>
                   </div>
+                </div>
+              ) : (
+                <>
+                  {/* User Stats Input */}
                   <div>
-                    <label className="label">Height (cm)</label>
-                    <input
-                      type="number"
-                      value={userStats.heightCm}
-                      onChange={(e) => setUserStats({ ...userStats, heightCm: Number(e.target.value) })}
-                      className="input"
-                    />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Your Stats</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="label">Age</label>
+                        <input
+                          type="number"
+                          value={userStats.age}
+                          onChange={(e) => setUserStats({ ...userStats, age: Number(e.target.value) })}
+                          className="input"
+                        />
+                      </div>
+                      <div>
+                        <label className="label">Sex</label>
+                        <select
+                          value={userStats.sex}
+                          onChange={(e) => setUserStats({ ...userStats, sex: e.target.value as 'male' | 'female' })}
+                          className="input"
+                        >
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="label">Weight (kg)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={userStats.weightKg}
+                          onChange={(e) => setUserStats({ ...userStats, weightKg: Number(e.target.value) })}
+                          className="input"
+                        />
+                      </div>
+                      <div>
+                        <label className="label">Height (cm)</label>
+                        <input
+                          type="number"
+                          value={userStats.heightCm}
+                          onChange={(e) => setUserStats({ ...userStats, heightCm: Number(e.target.value) })}
+                          className="input"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="label">Activity Level</label>
+                        <select
+                          value={userStats.activityLevel}
+                          onChange={(e) => setUserStats({ ...userStats, activityLevel: e.target.value as any })}
+                          className="input"
+                        >
+                          <option value="sedentary">Sedentary (little/no exercise)</option>
+                          <option value="light">Light (1-3 days/week)</option>
+                          <option value="moderate">Moderate (3-5 days/week)</option>
+                          <option value="active">Active (6-7 days/week)</option>
+                          <option value="very_active">Very Active (physical job + exercise)</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
-                  <div className="col-span-2">
-                    <label className="label">Activity Level</label>
-                    <select
-                      value={userStats.activityLevel}
-                      onChange={(e) => setUserStats({ ...userStats, activityLevel: e.target.value as any })}
-                      className="input"
-                    >
-                      <option value="sedentary">Sedentary (little/no exercise)</option>
-                      <option value="light">Light (1-3 days/week)</option>
-                      <option value="moderate">Moderate (3-5 days/week)</option>
-                      <option value="active">Active (6-7 days/week)</option>
-                      <option value="very_active">Very Active (physical job + exercise)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
 
-              {/* Calculated Macros Preview */}
-              {macros && (
-                <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Calculated Targets</h4>
-                  <div className="grid grid-cols-4 gap-4 text-center">
-                    <div>
-                      <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{macros.calories}</div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400">Calories</div>
+                  {/* Calculated Macros Preview */}
+                  {macros && (
+                    <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Calculated Targets</h4>
+                      <div className="grid grid-cols-4 gap-4 text-center">
+                        <div>
+                          <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{macros.calories}</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">Calories</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-green-600 dark:text-green-400">{macros.protein}g</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">Protein</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{macros.carbs}g</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">Carbs</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{macros.fat}g</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">Fat</div>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">{macros.protein}g</div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400">Protein</div>
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{macros.carbs}g</div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400">Carbs</div>
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{macros.fat}g</div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400">Fat</div>
-                    </div>
-                  </div>
-                </div>
+                  )}
+                </>
               )}
 
               {/* Program Config */}
