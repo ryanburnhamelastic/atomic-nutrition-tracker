@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-react';
 import { User } from '../types';
 import { usersApi, setAuthTokenGetter } from '../lib/api';
@@ -36,17 +36,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [userLoading, setUserLoading] = useState(true);
 
-  // Set up token getter for API calls
+  // Use refs to avoid stale closures in token getter
+  const isSignedInRef = useRef(isSignedIn);
+  const getTokenRef = useRef(getToken);
+
+  // Keep refs in sync with current values
+  useEffect(() => {
+    isSignedInRef.current = isSignedIn;
+  }, [isSignedIn]);
+
+  useEffect(() => {
+    getTokenRef.current = getToken;
+  }, [getToken]);
+
+  // Set up token getter for API calls - only once on mount
   useEffect(() => {
     setAuthTokenGetter(async () => {
-      console.log('[Auth] Token requested, isSignedIn:', isSignedIn);
-      // Explicitly check for true to avoid race condition with undefined
-      if (isSignedIn !== true) {
+      console.log('[Auth] Token requested, isSignedIn:', isSignedInRef.current);
+      // Read current value from ref to avoid stale closure
+      if (isSignedInRef.current !== true) {
         console.log('[Auth] Not signed in or auth not loaded, returning null');
         return null;
       }
       try {
-        const token = await getToken();
+        const token = await getTokenRef.current();
         console.log('[Auth] Got token from Clerk:', token ? 'Yes' : 'No');
         return token;
       } catch (error) {
@@ -54,7 +67,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return null;
       }
     });
-  }, [isSignedIn, getToken]);
+  }, []); // Empty deps - set once on mount, refs keep it updated
 
   // Fetch or create user on sign in
   useEffect(() => {
