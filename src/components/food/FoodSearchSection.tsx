@@ -32,6 +32,8 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
   const [loading, setLoading] = useState(false);
   const [selectedFood, setSelectedFood] = useState<SearchResult | null>(null);
   const [servings, setServings] = useState('1');
+  const [grams, setGrams] = useState('');
+  const [inputMode, setInputMode] = useState<'servings' | 'grams'>('servings');
   const [adding, setAdding] = useState(false);
 
   // Debounced search - searches custom foods, local database, and USDA
@@ -121,17 +123,29 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
   const handleSelectFood = (food: SearchResult) => {
     setSelectedFood(food);
     setServings('1');
+    setGrams(food.serving_size.toString());
+    setInputMode('servings');
   };
 
   const handleCancelSelection = () => {
     setSelectedFood(null);
     setServings('1');
+    setGrams('');
+    setInputMode('servings');
   };
 
   const handleAddFood = async () => {
     if (!selectedFood) return;
 
-    const servingCount = parseFloat(servings) || 1;
+    // Calculate servings based on input mode
+    let servingCount: number;
+    if (inputMode === 'grams') {
+      const gramsValue = parseFloat(grams) || 0;
+      servingCount = gramsValue / selectedFood.serving_size;
+    } else {
+      servingCount = parseFloat(servings) || 1;
+    }
+
     setAdding(true);
 
     // Determine which ID field to use based on source
@@ -158,14 +172,22 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
     setAdding(false);
     setSelectedFood(null);
     setServings('1');
+    setGrams('');
+    setInputMode('servings');
 
     if (!response.error) {
       onSuccess();
     }
   };
 
-  // Calculate nutrition for current servings
-  const servingCount = parseFloat(servings) || 1;
+  // Calculate nutrition for current servings/grams
+  let servingCount: number;
+  if (inputMode === 'grams' && selectedFood) {
+    const gramsValue = parseFloat(grams) || 0;
+    servingCount = gramsValue / selectedFood.serving_size;
+  } else {
+    servingCount = parseFloat(servings) || 1;
+  }
   const calculatedNutrition = selectedFood ? {
     calories: Math.round(selectedFood.calories * servingCount),
     protein: Math.round(selectedFood.protein * servingCount * 10) / 10,
@@ -207,19 +229,66 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
             </button>
           </div>
 
-          {/* Servings Input */}
+          {/* Input Mode Toggle */}
           <div className="mb-3">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Number of servings
-            </label>
-            <input
-              type="number"
-              min="0.25"
-              step="0.25"
-              value={servings}
-              onChange={(e) => setServings(e.target.value)}
-              className="input w-32"
-            />
+            <div className="flex gap-2 mb-2">
+              <button
+                type="button"
+                onClick={() => setInputMode('servings')}
+                className={`flex-1 py-1.5 px-3 text-sm font-medium rounded-md transition-colors ${
+                  inputMode === 'servings'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                Servings
+              </button>
+              <button
+                type="button"
+                onClick={() => setInputMode('grams')}
+                className={`flex-1 py-1.5 px-3 text-sm font-medium rounded-md transition-colors ${
+                  inputMode === 'grams'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                Grams
+              </button>
+            </div>
+
+            {inputMode === 'servings' ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Number of servings
+                </label>
+                <input
+                  type="number"
+                  min="0.25"
+                  step="0.25"
+                  value={servings}
+                  onChange={(e) => setServings(e.target.value)}
+                  className="input w-32"
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Amount in grams
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={grams}
+                  onChange={(e) => setGrams(e.target.value)}
+                  className="input w-32"
+                  placeholder="e.g., 150"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  1 serving = {selectedFood.serving_size}g
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Calculated Nutrition */}
@@ -254,7 +323,11 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
             </button>
             <button
               onClick={handleAddFood}
-              disabled={adding || !servings || parseFloat(servings) <= 0}
+              disabled={
+                adding ||
+                (inputMode === 'servings' && (!servings || parseFloat(servings) <= 0)) ||
+                (inputMode === 'grams' && (!grams || parseFloat(grams) <= 0))
+              }
               className="flex-1 btn btn-primary disabled:opacity-50"
             >
               {adding ? <LoadingSpinner size="sm" /> : 'Add to Meal'}
