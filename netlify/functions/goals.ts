@@ -37,7 +37,7 @@ const handler: Handler = async (event: HandlerEvent) => {
     // GET - Fetch user's nutrition goals
     if (event.httpMethod === 'GET') {
       const goals = await sql`
-        SELECT id, user_id, calorie_target, protein_target, carbs_target, fat_target, created_at, updated_at
+        SELECT id, user_id, calorie_target, protein_target, carbs_target, fat_target, use_metric, created_at, updated_at
         FROM user_goals
         WHERE user_id = ${userId}
       `;
@@ -54,6 +54,7 @@ const handler: Handler = async (event: HandlerEvent) => {
             protein_target: 150,
             carbs_target: 250,
             fat_target: 65,
+            use_metric: true,
             created_at: null,
             updated_at: null,
           }),
@@ -70,7 +71,7 @@ const handler: Handler = async (event: HandlerEvent) => {
     // PUT - Update or create nutrition goals
     if (event.httpMethod === 'PUT') {
       const body = JSON.parse(event.body || '{}');
-      const { calorieTarget, proteinTarget, carbsTarget, fatTarget } = body;
+      const { calorieTarget, proteinTarget, carbsTarget, fatTarget, useMetric } = body;
 
       // Check if goals exist
       const existing = await sql`
@@ -81,15 +82,16 @@ const handler: Handler = async (event: HandlerEvent) => {
       if (existing.length === 0) {
         // Create new goals
         goals = await sql`
-          INSERT INTO user_goals (user_id, calorie_target, protein_target, carbs_target, fat_target)
+          INSERT INTO user_goals (user_id, calorie_target, protein_target, carbs_target, fat_target, use_metric)
           VALUES (
             ${userId},
             ${calorieTarget ?? 2000},
             ${proteinTarget ?? 150},
             ${carbsTarget ?? 250},
-            ${fatTarget ?? 65}
+            ${fatTarget ?? 65},
+            ${useMetric ?? true}
           )
-          RETURNING id, user_id, calorie_target, protein_target, carbs_target, fat_target, created_at, updated_at
+          RETURNING id, user_id, calorie_target, protein_target, carbs_target, fat_target, use_metric, created_at, updated_at
         `;
       } else {
         // Update existing goals
@@ -100,9 +102,10 @@ const handler: Handler = async (event: HandlerEvent) => {
             protein_target = COALESCE(${proteinTarget ?? null}, protein_target),
             carbs_target = COALESCE(${carbsTarget ?? null}, carbs_target),
             fat_target = COALESCE(${fatTarget ?? null}, fat_target),
+            use_metric = COALESCE(${useMetric ?? null}, use_metric),
             updated_at = NOW()
           WHERE user_id = ${userId}
-          RETURNING id, user_id, calorie_target, protein_target, carbs_target, fat_target, created_at, updated_at
+          RETURNING id, user_id, calorie_target, protein_target, carbs_target, fat_target, use_metric, created_at, updated_at
         `;
       }
 

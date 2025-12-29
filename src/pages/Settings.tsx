@@ -16,6 +16,8 @@ export default function Settings() {
   const [proteinTarget, setProteinTarget] = useState('150');
   const [carbsTarget, setCarbsTarget] = useState('250');
   const [fatTarget, setFatTarget] = useState('65');
+  const [useMetric, setUseMetric] = useState(true);
+  const [autoCalcCalories, setAutoCalcCalories] = useState(false);
   const [savingGoals, setSavingGoals] = useState(false);
   const [goalsMessage, setGoalsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -39,8 +41,21 @@ export default function Settings() {
       setProteinTarget(String(goals.protein_target));
       setCarbsTarget(String(goals.carbs_target));
       setFatTarget(String(goals.fat_target));
+      setUseMetric(goals.use_metric);
     }
   }, [goals]);
+
+  // Auto-calculate calories from macros when enabled
+  // Formula: Protein (4 cal/g) + Carbs (4 cal/g) + Fat (9 cal/g)
+  useEffect(() => {
+    if (autoCalcCalories) {
+      const protein = Number(proteinTarget) || 0;
+      const carbs = Number(carbsTarget) || 0;
+      const fat = Number(fatTarget) || 0;
+      const calculatedCalories = (protein * 4) + (carbs * 4) + (fat * 9);
+      setCalorieTarget(String(Math.round(calculatedCalories)));
+    }
+  }, [proteinTarget, carbsTarget, fatTarget, autoCalcCalories]);
 
   const handleSaveGoals = async () => {
     setSavingGoals(true);
@@ -51,6 +66,7 @@ export default function Settings() {
       proteinTarget: Number(proteinTarget),
       carbsTarget: Number(carbsTarget),
       fatTarget: Number(fatTarget),
+      useMetric,
     });
 
     setSavingGoals(false);
@@ -265,17 +281,34 @@ export default function Settings() {
             )}
 
             <div>
-              <label htmlFor="calorieTarget" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Daily Calorie Target
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label htmlFor="calorieTarget" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Daily Calorie Target
+                </label>
+                <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                  <input
+                    type="checkbox"
+                    checked={autoCalcCalories}
+                    onChange={(e) => setAutoCalcCalories(e.target.checked)}
+                    className="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  Auto-calc from macros
+                </label>
+              </div>
               <input
                 id="calorieTarget"
                 type="number"
-                className="input mt-1"
+                className={`input ${autoCalcCalories ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
                 value={calorieTarget}
                 onChange={(e) => setCalorieTarget(e.target.value)}
                 min="0"
+                disabled={autoCalcCalories}
               />
+              {autoCalcCalories && (
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  = ({proteinTarget}g × 4) + ({carbsTarget}g × 4) + ({fatTarget}g × 9)
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-4">
@@ -337,6 +370,40 @@ export default function Settings() {
           Preferences
         </h2>
         <div className="space-y-4">
+          {/* Unit System Toggle */}
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Unit System
+              </label>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {useMetric ? 'Using metric (kg, cm)' : 'Using imperial (lbs, ft/in)'}
+              </p>
+            </div>
+            <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5">
+              <button
+                onClick={() => setUseMetric(true)}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  useMetric
+                    ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                Metric
+              </button>
+              <button
+                onClick={() => setUseMetric(false)}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  !useMetric
+                    ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                Imperial
+              </button>
+            </div>
+          </div>
+
           {/* Dark Mode Toggle */}
           <div className="flex items-center justify-between">
             <div>

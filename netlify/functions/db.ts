@@ -47,9 +47,15 @@ export async function initDb(): Promise<void> {
       protein_target INTEGER NOT NULL DEFAULT 150,
       carbs_target INTEGER NOT NULL DEFAULT 250,
       fat_target INTEGER NOT NULL DEFAULT 65,
+      use_metric BOOLEAN NOT NULL DEFAULT true,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
+  `;
+
+  // Add use_metric column if it doesn't exist (migration for existing users)
+  await sql`
+    ALTER TABLE user_goals ADD COLUMN IF NOT EXISTS use_metric BOOLEAN NOT NULL DEFAULT true
   `;
 
   // Base food database (system-wide, read-only for users)
@@ -125,6 +131,24 @@ export async function initDb(): Promise<void> {
 
   await sql`
     CREATE INDEX IF NOT EXISTS idx_food_entries_user_date ON food_entries(user_id, date)
+  `;
+
+  // Weight entries (daily weight log)
+  await sql`
+    CREATE TABLE IF NOT EXISTS weight_entries (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+      date DATE NOT NULL,
+      weight_kg DECIMAL(5,2) NOT NULL,
+      notes TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(user_id, date)
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_weight_entries_user_date ON weight_entries(user_id, date DESC)
   `;
 }
 

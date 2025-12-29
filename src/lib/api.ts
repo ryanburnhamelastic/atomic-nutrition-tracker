@@ -16,6 +16,8 @@ import {
   GeminiParseResult,
   GoalGenerationInput,
   GeneratedGoals,
+  WeightEntry,
+  CreateWeightEntryInput,
 } from '../types';
 
 const API_BASE = '/api';
@@ -164,6 +166,28 @@ export const foodEntriesApi = {
  */
 export const dailySummaryApi = {
   get: (date: string) => apiRequest<DailySummary>(`/daily-summary?date=${date}`),
+};
+
+/**
+ * Weight Entries API
+ */
+export const weightEntriesApi = {
+  list: (startDate?: string, endDate?: string, limit = 30) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    params.append('limit', String(limit));
+    return apiRequest<WeightEntry[]>(`/weight-entries?${params.toString()}`);
+  },
+  create: (data: CreateWeightEntryInput) =>
+    apiRequest<WeightEntry>('/weight-entries', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    apiRequest<void>(`/weight-entries/${id}`, {
+      method: 'DELETE',
+    }),
 };
 
 /**

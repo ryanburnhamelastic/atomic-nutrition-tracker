@@ -5,6 +5,7 @@ import { foodEntriesApi } from '../lib/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import DailyProgress from '../components/nutrition/DailyProgress';
 import MealSection from '../components/nutrition/MealSection';
+import WeightLogSection from '../components/weight/WeightLogSection';
 import { FoodEntry, MealType } from '../types';
 
 // Helper to format date for display
@@ -125,6 +126,9 @@ export default function Dashboard() {
         <>
           {/* Daily Progress */}
           <DailyProgress totals={summary.totals} goals={goals} />
+
+          {/* Weight Log */}
+          <WeightLogSection />
 
           {/* Meal Sections */}
           {(['breakfast', 'lunch', 'dinner', 'snack'] as MealType[]).map((mealType) => (

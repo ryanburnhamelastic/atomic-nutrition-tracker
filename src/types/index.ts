@@ -51,6 +51,7 @@ export interface UserGoals {
   protein_target: number;
   carbs_target: number;
   fat_target: number;
+  use_metric: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -60,6 +61,26 @@ export interface UpdateGoalsInput {
   proteinTarget?: number;
   carbsTarget?: number;
   fatTarget?: number;
+  useMetric?: boolean;
+}
+
+/**
+ * Weight entry for daily weight tracking
+ */
+export interface WeightEntry {
+  id: string;
+  user_id: string;
+  date: string;
+  weight_kg: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateWeightEntryInput {
+  date: string;
+  weightKg: number;
+  notes?: string;
 }
 
 /**
