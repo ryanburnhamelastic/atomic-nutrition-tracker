@@ -150,6 +150,40 @@ export async function initDb(): Promise<void> {
   await sql`
     CREATE INDEX IF NOT EXISTS idx_weight_entries_user_date ON weight_entries(user_id, date DESC)
   `;
+
+  // Favorite foods (user's favorited base foods for quick add)
+  await sql`
+    CREATE TABLE IF NOT EXISTS favorite_foods (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+      food_id UUID REFERENCES foods(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(user_id, food_id)
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_favorite_foods_user ON favorite_foods(user_id)
+  `;
+
+  // User stats (streaks, achievements, tracking stats)
+  await sql`
+    CREATE TABLE IF NOT EXISTS user_stats (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+      current_streak INTEGER DEFAULT 0,
+      longest_streak INTEGER DEFAULT 0,
+      total_days_logged INTEGER DEFAULT 0,
+      last_logged_date DATE,
+      achievements JSONB DEFAULT '[]',
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_user_stats_user ON user_stats(user_id)
+  `;
 }
 
 /**

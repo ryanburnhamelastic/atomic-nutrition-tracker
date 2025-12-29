@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useNutrition } from '../contexts/NutritionContext';
+import QuickAddFavorites from '../components/food/QuickAddFavorites';
 import AIFoodInput from '../components/food/AIFoodInput';
 import FoodSearchSection from '../components/food/FoodSearchSection';
 import QuickAddForm from '../components/food/QuickAddForm';
@@ -80,6 +81,14 @@ export default function LogFood() {
           ))}
         </div>
       </div>
+
+      {/* Quick Add Favorites (only show when not editing) */}
+      {!editEntry && (
+        <QuickAddFavorites
+          mealType={selectedMeal}
+          onAdd={handleSuccess}
+        />
+      )}
 
       {/* AI Food Input (only show when not editing) */}
       {!editEntry && (

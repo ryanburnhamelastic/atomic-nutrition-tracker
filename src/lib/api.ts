@@ -19,6 +19,9 @@ import {
   WeightEntry,
   CreateWeightEntryInput,
   AnalyticsData,
+  FavoriteFood,
+  UserStats,
+  UpdateStatsResponse,
 } from '../types';
 
 const API_BASE = '/api';
@@ -278,6 +281,32 @@ export const analyticsApi = {
     if (endDate) params.append('endDate', endDate);
     return apiRequest<AnalyticsData>(`/analytics?${params.toString()}`);
   },
+};
+
+/**
+ * Favorite Foods API
+ */
+export const favoriteFoodsApi = {
+  list: () => apiRequest<FavoriteFood[]>('/favorite-foods'),
+  add: (foodId: string) =>
+    apiRequest<{ id: string; user_id: string; food_id: string; created_at: string }>('/favorite-foods', {
+      method: 'POST',
+      body: JSON.stringify({ foodId }),
+    }),
+  remove: (foodId: string) =>
+    apiRequest<{ message: string }>(`/favorite-foods/${foodId}`, {
+      method: 'DELETE',
+    }),
+};
+
+/**
+ * User Stats API
+ */
+export const userStatsApi = {
+  get: () => apiRequest<UserStats>('/user-stats'),
+  update: () => apiRequest<UpdateStatsResponse>('/user-stats', {
+    method: 'POST',
+  }),
 };
 
 // Export for file uploads if needed

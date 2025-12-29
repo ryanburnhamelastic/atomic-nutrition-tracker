@@ -358,3 +358,48 @@ export interface AnalyticsData {
     lastWeek: WeeklyAverage;
   };
 }
+
+// ============================================
+// Favorites & Achievements Types
+// ============================================
+
+/**
+ * Favorite food with full food details
+ */
+export interface FavoriteFood extends Food {
+  favorite_id: string;
+  favorited_at: string;
+}
+
+/**
+ * Achievement definition
+ */
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+}
+
+/**
+ * User statistics and achievements
+ */
+export interface UserStats {
+  id: string;
+  user_id: string;
+  current_streak: number;
+  longest_streak: number;
+  total_days_logged: number;
+  last_logged_date: string | null;
+  achievements: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Response from updating user stats
+ */
+export interface UpdateStatsResponse {
+  stats: UserStats;
+  newAchievements: Achievement[];
+}
