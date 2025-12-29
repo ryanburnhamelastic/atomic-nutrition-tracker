@@ -39,8 +39,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Set up token getter for API calls
   useEffect(() => {
     setAuthTokenGetter(async () => {
-      if (!isSignedIn) return null;
-      return await getToken();
+      console.log('[Auth] Token requested, isSignedIn:', isSignedIn);
+      if (!isSignedIn) {
+        console.log('[Auth] Not signed in, returning null');
+        return null;
+      }
+      try {
+        const token = await getToken();
+        console.log('[Auth] Got token from Clerk:', token ? 'Yes' : 'No');
+        return token;
+      } catch (error) {
+        console.error('[Auth] Error getting token:', error);
+        return null;
+      }
     });
   }, [isSignedIn, getToken]);
 

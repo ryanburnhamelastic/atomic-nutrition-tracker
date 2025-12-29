@@ -51,9 +51,14 @@ async function apiRequest<T>(
     // Add auth token if available
     if (getAuthToken) {
       const token = await getAuthToken();
+      console.log('[API] Token retrieved:', token ? 'Yes' : 'No');
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+      } else {
+        console.warn('[API] No auth token available for request:', endpoint);
       }
+    } else {
+      console.warn('[API] getAuthToken not initialized for request:', endpoint);
     }
 
     const response = await fetch(`${API_BASE}${endpoint}`, {
