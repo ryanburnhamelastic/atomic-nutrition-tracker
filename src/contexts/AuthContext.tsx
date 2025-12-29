@@ -40,8 +40,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     setAuthTokenGetter(async () => {
       console.log('[Auth] Token requested, isSignedIn:', isSignedIn);
-      if (!isSignedIn) {
-        console.log('[Auth] Not signed in, returning null');
+      // Explicitly check for true to avoid race condition with undefined
+      if (isSignedIn !== true) {
+        console.log('[Auth] Not signed in or auth not loaded, returning null');
         return null;
       }
       try {
