@@ -2,15 +2,14 @@ import { useState, useEffect } from 'react';
 import { WeightEntry } from '../../types';
 import { weightEntriesApi } from '../../lib/api';
 import { useNutrition } from '../../contexts/NutritionContext';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { formatWeight, convertWeight, toKg, getWeightUnit, getWeightStep } from '../../lib/units';
 import LoadingSpinner from '../common/LoadingSpinner';
 
-// Conversion constants
-const KG_TO_LBS = 2.20462;
-const LBS_TO_KG = 0.453592;
-
 export default function WeightLogSection() {
-  const { goals, selectedDate } = useNutrition();
-  const useMetric = goals?.use_metric ?? true;
+  const { selectedDate } = useNutrition();
+  const { user } = useAuthContext();
+  const unitSystem = user?.unit_system || 'metric';
 
   const [entries, setEntries] = useState<WeightEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,14 +29,12 @@ export default function WeightLogSection() {
     setTodayEntry(today || null);
     if (today) {
       // Convert to display units
-      const displayWeight = useMetric
-        ? today.weight_kg
-        : today.weight_kg * KG_TO_LBS;
+      const displayWeight = convertWeight(today.weight_kg, unitSystem);
       setWeightInput(displayWeight.toFixed(1));
     } else {
       setWeightInput('');
     }
-  }, [entries, selectedDate, useMetric]);
+  }, [entries, selectedDate, unitSystem]);
 
   const loadEntries = async () => {
     setLoading(true);
@@ -59,8 +56,8 @@ export default function WeightLogSection() {
 
     setSaving(true);
 
-    // Convert to kg if imperial
-    const weightKg = useMetric ? inputValue : inputValue * LBS_TO_KG;
+    // Convert to kg for storage
+    const weightKg = toKg(inputValue, unitSystem);
 
     const response = await weightEntriesApi.create({
       date: selectedDate,
@@ -72,13 +69,6 @@ export default function WeightLogSection() {
     }
 
     setSaving(false);
-  };
-
-  const formatWeight = (weightKg: number): string => {
-    if (useMetric) {
-      return `${weightKg.toFixed(1)} kg`;
-    }
-    return `${(weightKg * KG_TO_LBS).toFixed(1)} lbs`;
   };
 
   // Normalize date string to YYYY-MM-DD format (handles both ISO timestamps and date strings)
@@ -105,7 +95,7 @@ export default function WeightLogSection() {
     const previous = entries[1];
     const change = latest.weight_kg - previous.weight_kg;
     return {
-      value: useMetric ? Math.abs(change) : Math.abs(change * KG_TO_LBS),
+      value: convertWeight(Math.abs(change), unitSystem),
       isLoss: change < 0,
     };
   };
@@ -132,7 +122,7 @@ export default function WeightLogSection() {
             <div className="flex-1 relative">
               <input
                 type="number"
-                step="0.1"
+                step={getWeightStep(unitSystem)}
                 min="0"
                 className="input pr-12"
                 placeholder={`Enter weight`}
@@ -140,7 +130,7 @@ export default function WeightLogSection() {
                 onChange={(e) => setWeightInput(e.target.value)}
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                {useMetric ? 'kg' : 'lbs'}
+                {getWeightUnit(unitSystem)}
               </span>
             </div>
             <button
@@ -162,7 +152,7 @@ export default function WeightLogSection() {
               <svg className={`w-4 h-4 ${weightChange.isLoss ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
               </svg>
-              {weightChange.value.toFixed(1)} {useMetric ? 'kg' : 'lbs'} from last entry
+              {weightChange.value.toFixed(1)} {getWeightUnit(unitSystem)} from last entry
             </div>
           )}
 
@@ -180,7 +170,7 @@ export default function WeightLogSection() {
                       {formatDate(entry.date)}
                     </span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {formatWeight(entry.weight_kg)}
+                      {formatWeight(entry.weight_kg, unitSystem)}
                     </span>
                   </div>
                 ))}

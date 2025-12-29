@@ -1,5 +1,7 @@
 import { UserProgram } from '../../types';
 import { PROGRAM_TEMPLATES } from '../../lib/programTemplates';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { formatWeight } from '../../lib/units';
 
 interface ActiveProgramCardProps {
   program: UserProgram;
@@ -8,6 +10,8 @@ interface ActiveProgramCardProps {
 }
 
 export default function ActiveProgramCard({ program, currentWeight, onChangeProgram }: ActiveProgramCardProps) {
+  const { user } = useAuthContext();
+  const unitSystem = user?.unit_system || 'metric';
   const template = PROGRAM_TEMPLATES.find(t => t.id === program.program_id);
 
   // Calculate progress
@@ -89,7 +93,7 @@ export default function ActiveProgramCard({ program, currentWeight, onChangeProg
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs text-indigo-100">Start</div>
-              <div className="text-lg font-bold">{startWeight.toFixed(1)} kg</div>
+              <div className="text-lg font-bold">{formatWeight(startWeight, unitSystem)}</div>
             </div>
             {currentWeight && (
               <>
@@ -102,10 +106,10 @@ export default function ActiveProgramCard({ program, currentWeight, onChangeProg
                 <div>
                   <div className="text-xs text-indigo-100">Current</div>
                   <div className="text-lg font-bold">
-                    {currentWeight.toFixed(1)} kg
+                    {formatWeight(currentWeight, unitSystem)}
                     {weightChange !== null && (
                       <span className={`text-sm ml-2 ${weightChange > 0 ? 'text-amber-200' : 'text-green-200'}`}>
-                        {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)}
+                        {weightChange > 0 ? '+' : ''}{formatWeight(Math.abs(weightChange), unitSystem)}
                       </span>
                     )}
                   </div>
@@ -121,7 +125,7 @@ export default function ActiveProgramCard({ program, currentWeight, onChangeProg
                 </div>
                 <div>
                   <div className="text-xs text-indigo-100">Target</div>
-                  <div className="text-lg font-bold">{targetWeight.toFixed(1)} kg</div>
+                  <div className="text-lg font-bold">{formatWeight(targetWeight, unitSystem)}</div>
                 </div>
               </>
             )}
