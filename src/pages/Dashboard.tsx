@@ -1,12 +1,14 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNutrition } from '../contexts/NutritionContext';
-import { foodEntriesApi } from '../lib/api';
+import { foodEntriesApi, userStatsApi } from '../lib/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import DailyProgress from '../components/nutrition/DailyProgress';
 import MealSection from '../components/nutrition/MealSection';
 import WeightLogSection from '../components/weight/WeightLogSection';
-import { FoodEntry, MealType } from '../types';
+import StreakCounter from '../components/achievements/StreakCounter';
+import AchievementBadges from '../components/achievements/AchievementBadges';
+import { FoodEntry, MealType, UserStats } from '../types';
 
 // Helper to format date for display
 function formatDate(dateString: string): string {
@@ -47,6 +49,24 @@ export default function Dashboard() {
     summaryLoading,
     refreshSummary,
   } = useNutrition();
+
+  // User stats for streaks and achievements
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  // Load user stats
+  useEffect(() => {
+    loadUserStats();
+  }, []);
+
+  const loadUserStats = async () => {
+    setStatsLoading(true);
+    const response = await userStatsApi.get();
+    if (response.data) {
+      setUserStats(response.data);
+    }
+    setStatsLoading(false);
+  };
 
   // Handle edit entry - navigate to LogFood with entry data
   const handleEditEntry = useCallback((entry: FoodEntry) => {
@@ -126,6 +146,12 @@ export default function Dashboard() {
         <>
           {/* Daily Progress */}
           <DailyProgress totals={summary.totals} goals={goals} />
+
+          {/* Streaks and Achievements */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <StreakCounter stats={userStats} loading={statsLoading} />
+            <AchievementBadges stats={userStats} loading={statsLoading} />
+          </div>
 
           {/* Weight Log */}
           <WeightLogSection />

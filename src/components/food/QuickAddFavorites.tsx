@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { favoriteFoodsApi, foodEntriesApi } from '../../lib/api';
+import { favoriteFoodsApi, foodEntriesApi, userStatsApi } from '../../lib/api';
 import { FavoriteFood } from '../../types';
 import { useNutrition } from '../../contexts/NutritionContext';
 
@@ -36,6 +36,19 @@ export default function QuickAddFavorites({ mealType, onAdd }: QuickAddFavorites
         mealType,
         servings: 1,
       });
+
+      // Update user stats and check for new achievements
+      const statsResponse = await userStatsApi.update();
+      if (statsResponse.data?.newAchievements && statsResponse.data.newAchievements.length > 0) {
+        // Show achievement notification
+        statsResponse.data.newAchievements.forEach((achievement) => {
+          if (achievement) {
+            console.log('🏆 Achievement unlocked:', achievement.name);
+            // Could show a toast notification here
+          }
+        });
+      }
+
       await refreshSummary();
       onAdd?.();
     } catch (error) {
