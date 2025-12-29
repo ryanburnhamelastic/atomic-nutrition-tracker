@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useNutrition } from '../contexts/NutritionContext';
-import { foodEntriesApi, userStatsApi, userProgramsApi, weightEntriesApi } from '../lib/api';
+import { foodEntriesApi, userStatsApi, userProgramsApi, weightEntriesApi, programReviewsApi } from '../lib/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import DailyProgress from '../components/nutrition/DailyProgress';
 import MealSection from '../components/nutrition/MealSection';
@@ -11,7 +11,9 @@ import AchievementBadges from '../components/achievements/AchievementBadges';
 import ActiveProgramCard from '../components/programs/ActiveProgramCard';
 import ProgramSelectionModal from '../components/programs/ProgramSelectionModal';
 import ProgramCompletionModal from '../components/programs/ProgramCompletionModal';
-import { FoodEntry, MealType, UserStats, UserProgram } from '../types';
+import ProgramReviewBanner from '../components/programs/ProgramReviewBanner';
+import ProgramReviewModal from '../components/programs/ProgramReviewModal';
+import { FoodEntry, MealType, UserStats, UserProgram, ProgramReview } from '../types';
 
 // Helper to format date for display
 function formatDate(dateString: string): string {
@@ -76,6 +78,10 @@ export default function Dashboard() {
   const [currentWeight, setCurrentWeight] = useState<number | undefined>(undefined);
   const [programLoading, setProgramLoading] = useState(true);
 
+  // Review state
+  const [pendingReview, setPendingReview] = useState<ProgramReview | null>(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+
   // Load user stats
   useEffect(() => {
     loadUserStats();
@@ -111,6 +117,14 @@ export default function Dashboard() {
         setActiveProgram(null);
       } else if (program && program.status === 'active') {
         setActiveProgram(program);
+
+        // Load pending review for active program
+        const reviewResponse = await programReviewsApi.list('pending', program.id, 1);
+        if (reviewResponse.data && reviewResponse.data.length > 0) {
+          setPendingReview(reviewResponse.data[0]);
+        } else {
+          setPendingReview(null);
+        }
       }
     }
 
@@ -158,6 +172,16 @@ export default function Dashboard() {
     setShowProgramCompletion(false);
     setCompletedProgram(null);
     setShowProgramSelection(true);
+  };
+
+  // Review handlers
+  const handleReviewSuccess = () => {
+    setPendingReview(null);
+    loadProgram(); // Reload program with updated macros
+  };
+
+  const handleDismissReview = () => {
+    setShowReviewModal(false);
   };
 
   // Default empty summary
@@ -255,6 +279,15 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* Review Banner */}
+          {pendingReview && activeProgram && (
+            <ProgramReviewBanner
+              review={pendingReview}
+              onViewAnalysis={() => setShowReviewModal(true)}
+              onDismiss={handleDismissReview}
+            />
+          )}
+
           {/* Weight Log */}
           <WeightLogSection />
 
@@ -285,6 +318,15 @@ export default function Dashboard() {
         completedProgram={completedProgram}
         onClose={handleCompletionClose}
         onStartNewProgram={handleStartNewProgram}
+      />
+
+      {/* Program Review Modal */}
+      <ProgramReviewModal
+        isOpen={showReviewModal}
+        review={pendingReview}
+        program={activeProgram}
+        onClose={() => setShowReviewModal(false)}
+        onSuccess={handleReviewSuccess}
       />
     </div>
   );

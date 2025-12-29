@@ -458,3 +458,96 @@ export interface ProgramsResponse {
   active: UserProgram | null;
   history: UserProgram[];
 }
+
+// ============================================
+// Program Review Types
+// ============================================
+
+/**
+ * AI weekly program review
+ */
+export interface ProgramReview {
+  id: string;
+  user_id: string;
+  program_id: string;
+  review_week: number;
+  review_date: string;
+
+  // Analysis inputs (snapshot of data at review time)
+  days_analyzed: number;
+  avg_calories: number;
+  avg_protein: number;
+  avg_carbs: number;
+  avg_fat: number;
+  compliance_rate: number;
+
+  // Weight data
+  starting_weight_kg: number | null;
+  current_weight_kg: number | null;
+  trend_weight_kg: number | null;
+  weight_change_kg: number | null;
+
+  // AI recommendations
+  ai_analysis: string;
+  recommended_calories: number;
+  recommended_protein: number;
+  recommended_carbs: number;
+  recommended_fat: number;
+  confidence_level: 'low' | 'medium' | 'high';
+
+  // User action
+  status: 'pending' | 'accepted' | 'rejected' | 'expired';
+  user_response_date: string | null;
+  user_notes: string | null;
+
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Input for generating a program review
+ */
+export interface GenerateReviewInput {
+  programId?: string;
+  forceReview?: boolean;
+}
+
+/**
+ * Input for accepting a review
+ */
+export interface AcceptReviewInput {
+  notes?: string;
+}
+
+/**
+ * Input for rejecting a review
+ */
+export interface RejectReviewInput {
+  reason?: string;
+}
+
+/**
+ * Program macro history entry (audit trail)
+ */
+export interface ProgramMacroHistory {
+  id: string;
+  program_id: string;
+  review_id: string | null;
+  calorie_target: number;
+  protein_target: number;
+  carbs_target: number;
+  fat_target: number;
+  effective_date: string;
+  change_reason: 'initial' | 'ai_review' | 'manual_adjustment';
+  created_at: string;
+}
+
+/**
+ * Response from review accept/reject actions
+ */
+export interface ReviewActionResponse {
+  review: ProgramReview;
+  program?: UserProgram;
+  goals?: UserGoals;
+  message: string;
+}

@@ -154,11 +154,20 @@ const handler: Handler = async (event: HandlerEvent) => {
       };
     }
 
-    // PUT - Update program (complete, cancel, or modify)
+    // PUT - Update program (complete, cancel, modify, or update macros)
     if (event.httpMethod === 'PUT') {
       const programId = event.path.split('/').pop();
       const body = JSON.parse(event.body || '{}');
-      const { status, endingWeightKg, notes } = body;
+      const {
+        status,
+        endingWeightKg,
+        notes,
+        calorieTarget,
+        proteinTarget,
+        carbsTarget,
+        fatTarget,
+        macrosLocked
+      } = body;
 
       if (!programId) {
         return {
@@ -168,9 +177,9 @@ const handler: Handler = async (event: HandlerEvent) => {
         };
       }
 
-      // Verify ownership
+      // Verify ownership and get current program
       const existing = await sql`
-        SELECT id FROM user_programs WHERE id = ${programId} AND user_id = ${userId}
+        SELECT * FROM user_programs WHERE id = ${programId} AND user_id = ${userId}
       `;
 
       if (existing.length === 0) {
@@ -181,12 +190,79 @@ const handler: Handler = async (event: HandlerEvent) => {
         };
       }
 
+      const currentProgram = existing[0];
+
+      // Check if macros are being updated
+      const isMacroUpdate = calorieTarget !== undefined ||
+                           proteinTarget !== undefined ||
+                           carbsTarget !== undefined ||
+                           fatTarget !== undefined;
+
+      // If macros are being updated, perform additional actions
+      if (isMacroUpdate) {
+        const today = new Date().toISOString().split('T')[0];
+
+        // Use provided values or keep current values
+        const newCalories = calorieTarget ?? currentProgram.calorie_target;
+        const newProtein = proteinTarget ?? currentProgram.protein_target;
+        const newCarbs = carbsTarget ?? currentProgram.carbs_target;
+        const newFat = fatTarget ?? currentProgram.fat_target;
+
+        // 1. Insert into program_macro_history
+        await sql`
+          INSERT INTO program_macro_history (
+            program_id,
+            calorie_target,
+            protein_target,
+            carbs_target,
+            fat_target,
+            effective_date,
+            change_reason
+          )
+          VALUES (
+            ${programId},
+            ${newCalories},
+            ${newProtein},
+            ${newCarbs},
+            ${newFat},
+            ${today},
+            'manual_adjustment'
+          )
+        `;
+
+        // 2. Update user_goals to match new macros
+        await sql`
+          INSERT INTO user_goals (user_id, calorie_target, protein_target, carbs_target, fat_target)
+          VALUES (${userId}, ${newCalories}, ${newProtein}, ${newCarbs}, ${newFat})
+          ON CONFLICT (user_id)
+          DO UPDATE SET
+            calorie_target = ${newCalories},
+            protein_target = ${newProtein},
+            carbs_target = ${newCarbs},
+            fat_target = ${newFat},
+            updated_at = NOW()
+        `;
+
+        // 3. Expire any pending reviews for this program
+        await sql`
+          UPDATE program_reviews
+          SET status = 'expired', updated_at = NOW()
+          WHERE program_id = ${programId} AND status = 'pending'
+        `;
+      }
+
+      // Update the program
       const updated = await sql`
         UPDATE user_programs
         SET
           status = COALESCE(${status || null}, status),
           ending_weight_kg = COALESCE(${endingWeightKg || null}, ending_weight_kg),
           notes = COALESCE(${notes || null}, notes),
+          calorie_target = COALESCE(${calorieTarget || null}, calorie_target),
+          protein_target = COALESCE(${proteinTarget || null}, protein_target),
+          carbs_target = COALESCE(${carbsTarget || null}, carbs_target),
+          fat_target = COALESCE(${fatTarget || null}, fat_target),
+          macros_locked = COALESCE(${macrosLocked !== undefined ? macrosLocked : null}, macros_locked),
           updated_at = NOW()
         WHERE id = ${programId}
         RETURNING *

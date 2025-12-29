@@ -25,6 +25,11 @@ import {
   UserProgram,
   CreateProgramInput,
   ProgramsResponse,
+  ProgramReview,
+  GenerateReviewInput,
+  AcceptReviewInput,
+  RejectReviewInput,
+  ReviewActionResponse,
 } from '../types';
 
 const API_BASE = '/api';
@@ -323,9 +328,49 @@ export const userProgramsApi = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-  update: (id: string, data: { status?: string; endingWeightKg?: number; notes?: string }) =>
+  update: (
+    id: string,
+    data: {
+      status?: string;
+      endingWeightKg?: number;
+      notes?: string;
+      calorieTarget?: number;
+      proteinTarget?: number;
+      carbsTarget?: number;
+      fatTarget?: number;
+      macrosLocked?: boolean;
+    }
+  ) =>
     apiRequest<UserProgram>(`/user-programs/${id}`, {
       method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+};
+
+/**
+ * Program Reviews API
+ */
+export const programReviewsApi = {
+  list: (status?: string, programId?: string, limit = 10) => {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (programId) params.append('programId', programId);
+    params.append('limit', String(limit));
+    return apiRequest<ProgramReview[]>(`/program-reviews?${params.toString()}`);
+  },
+  generate: (data: GenerateReviewInput = {}) =>
+    apiRequest<ProgramReview>('/program-reviews/generate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  accept: (id: string, data: AcceptReviewInput = {}) =>
+    apiRequest<ReviewActionResponse>(`/program-reviews/${id}/accept`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  reject: (id: string, data: RejectReviewInput = {}) =>
+    apiRequest<ReviewActionResponse>(`/program-reviews/${id}/reject`, {
+      method: 'POST',
       body: JSON.stringify(data),
     }),
 };

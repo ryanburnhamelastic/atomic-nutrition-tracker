@@ -222,6 +222,89 @@ export async function initDb(): Promise<void> {
   await sql`
     CREATE INDEX IF NOT EXISTS idx_user_programs_user_status ON user_programs(user_id, status)
   `;
+
+  // Add review tracking columns to user_programs (migration for existing programs)
+  await sql`
+    ALTER TABLE user_programs
+      ADD COLUMN IF NOT EXISTS last_review_date DATE,
+      ADD COLUMN IF NOT EXISTS next_review_date DATE,
+      ADD COLUMN IF NOT EXISTS review_count INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS macros_locked BOOLEAN DEFAULT false
+  `;
+
+  // Program reviews table - stores AI weekly reviews
+  await sql`
+    CREATE TABLE IF NOT EXISTS program_reviews (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+      program_id UUID REFERENCES user_programs(id) ON DELETE CASCADE,
+      review_week INTEGER NOT NULL,
+      review_date DATE NOT NULL,
+
+      -- Analysis inputs (snapshot of data at review time)
+      days_analyzed INTEGER NOT NULL,
+      avg_calories INTEGER NOT NULL,
+      avg_protein INTEGER NOT NULL,
+      avg_carbs INTEGER NOT NULL,
+      avg_fat INTEGER NOT NULL,
+      compliance_rate INTEGER NOT NULL,
+
+      -- Weight data
+      starting_weight_kg DECIMAL(5,2),
+      current_weight_kg DECIMAL(5,2),
+      trend_weight_kg DECIMAL(5,2),
+      weight_change_kg DECIMAL(5,2),
+
+      -- AI recommendations
+      ai_analysis TEXT NOT NULL,
+      recommended_calories INTEGER,
+      recommended_protein INTEGER,
+      recommended_carbs INTEGER,
+      recommended_fat INTEGER,
+      confidence_level TEXT CHECK (confidence_level IN ('low', 'medium', 'high')),
+
+      -- User action
+      status TEXT NOT NULL CHECK (status IN ('pending', 'accepted', 'rejected', 'expired')) DEFAULT 'pending',
+      user_response_date TIMESTAMPTZ,
+      user_notes TEXT,
+
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+      UNIQUE(program_id, review_week)
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_program_reviews_user_status ON program_reviews(user_id, status)
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_program_reviews_program ON program_reviews(program_id, review_date DESC)
+  `;
+
+  // Program macro history table - audit trail of all macro changes
+  await sql`
+    CREATE TABLE IF NOT EXISTS program_macro_history (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      program_id UUID REFERENCES user_programs(id) ON DELETE CASCADE,
+      review_id UUID REFERENCES program_reviews(id) ON DELETE SET NULL,
+
+      calorie_target INTEGER NOT NULL,
+      protein_target INTEGER NOT NULL,
+      carbs_target INTEGER NOT NULL,
+      fat_target INTEGER NOT NULL,
+
+      effective_date DATE NOT NULL,
+      change_reason TEXT NOT NULL,
+
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_program_macro_history_program ON program_macro_history(program_id, effective_date DESC)
+  `;
 }
 
 /**

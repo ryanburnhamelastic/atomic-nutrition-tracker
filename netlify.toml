@@ -9,6 +9,9 @@
 [functions]
   node_bundler = "esbuild"
 
+# Scheduled Functions
+# Note: scheduled-review-check.ts runs daily at 6am UTC (configured in function file)
+
 # Development server configuration
 [dev]
   command = "npm run dev"
