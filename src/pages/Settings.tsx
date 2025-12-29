@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNutrition } from '../contexts/NutritionContext';
-import { goalsApi } from '../lib/api';
+import { goalsApi, geminiApi } from '../lib/api';
+import { GoalGenerationInput } from '../types';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 export default function Settings() {
@@ -17,6 +18,19 @@ export default function Settings() {
   const [fatTarget, setFatTarget] = useState('65');
   const [savingGoals, setSavingGoals] = useState(false);
   const [goalsMessage, setGoalsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // AI Goal Generation state
+  const [showAIGoals, setShowAIGoals] = useState(false);
+  const [aiLoading, setAILoading] = useState(false);
+  const [aiExplanation, setAIExplanation] = useState<string | null>(null);
+  const [aiForm, setAIForm] = useState<GoalGenerationInput>({
+    age: 30,
+    sex: 'male',
+    heightCm: 175,
+    weightKg: 75,
+    activityLevel: 'moderate',
+    goal: 'maintain',
+  });
 
   // Populate form when goals load
   useEffect(() => {
@@ -47,6 +61,29 @@ export default function Settings() {
       setGoalsMessage({ type: 'success', text: 'Goals saved successfully!' });
       refreshGoals();
       setTimeout(() => setGoalsMessage(null), 3000);
+    }
+  };
+
+  const handleGenerateAIGoals = async () => {
+    setAILoading(true);
+    setGoalsMessage(null);
+    setAIExplanation(null);
+
+    const response = await geminiApi.generateGoals(aiForm);
+
+    setAILoading(false);
+
+    if (response.error) {
+      setGoalsMessage({ type: 'error', text: response.error });
+    } else if (response.data) {
+      // Update the form with AI-generated values
+      setCalorieTarget(String(response.data.calorieTarget));
+      setProteinTarget(String(response.data.proteinTarget));
+      setCarbsTarget(String(response.data.carbsTarget));
+      setFatTarget(String(response.data.fatTarget));
+      setAIExplanation(response.data.explanation);
+      setShowAIGoals(false);
+      setGoalsMessage({ type: 'success', text: 'AI goals generated! Review and save below.' });
     }
   };
 
@@ -81,9 +118,132 @@ export default function Settings() {
 
       {/* Nutrition Goals Section */}
       <section className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 border border-slate-200 dark:border-slate-700 mb-6">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-          Nutrition Goals
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Nutrition Goals
+          </h2>
+          <button
+            onClick={() => setShowAIGoals(!showAIGoals)}
+            className="flex items-center gap-1.5 text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-medium"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            {showAIGoals ? 'Hide AI' : 'Generate with AI'}
+          </button>
+        </div>
+
+        {/* AI Goal Generator */}
+        {showAIGoals && (
+          <div className="mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+            <h3 className="font-medium text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+              <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              AI Goal Calculator
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              Enter your details and let AI calculate personalized nutrition goals based on evidence-based formulas.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Age</label>
+                <input
+                  type="number"
+                  className="input"
+                  value={aiForm.age}
+                  onChange={(e) => setAIForm({ ...aiForm, age: Number(e.target.value) })}
+                  min="13"
+                  max="120"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sex</label>
+                <select
+                  className="input"
+                  value={aiForm.sex}
+                  onChange={(e) => setAIForm({ ...aiForm, sex: e.target.value as 'male' | 'female' })}
+                >
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Height (cm)</label>
+                <input
+                  type="number"
+                  className="input"
+                  value={aiForm.heightCm}
+                  onChange={(e) => setAIForm({ ...aiForm, heightCm: Number(e.target.value) })}
+                  min="100"
+                  max="250"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Weight (kg)</label>
+                <input
+                  type="number"
+                  className="input"
+                  value={aiForm.weightKg}
+                  onChange={(e) => setAIForm({ ...aiForm, weightKg: Number(e.target.value) })}
+                  min="30"
+                  max="300"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Activity Level</label>
+                <select
+                  className="input"
+                  value={aiForm.activityLevel}
+                  onChange={(e) => setAIForm({ ...aiForm, activityLevel: e.target.value as GoalGenerationInput['activityLevel'] })}
+                >
+                  <option value="sedentary">Sedentary</option>
+                  <option value="light">Lightly Active</option>
+                  <option value="moderate">Moderately Active</option>
+                  <option value="active">Active</option>
+                  <option value="very_active">Very Active</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Goal</label>
+                <select
+                  className="input"
+                  value={aiForm.goal}
+                  onChange={(e) => setAIForm({ ...aiForm, goal: e.target.value as GoalGenerationInput['goal'] })}
+                >
+                  <option value="lose_weight">Lose Weight</option>
+                  <option value="maintain">Maintain Weight</option>
+                  <option value="gain_muscle">Build Muscle</option>
+                </select>
+              </div>
+            </div>
+
+            <button
+              onClick={handleGenerateAIGoals}
+              disabled={aiLoading}
+              className="btn btn-primary w-full bg-purple-600 hover:bg-purple-700"
+            >
+              {aiLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <LoadingSpinner size="sm" />
+                  Calculating...
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Generate Goals
+                </span>
+              )}
+            </button>
+          </div>
+        )}
+
         {goalsLoading ? (
           <div className="flex justify-center py-4">
             <LoadingSpinner />
@@ -93,6 +253,14 @@ export default function Settings() {
             {goalsMessage && (
               <div className={goalsMessage.type === 'success' ? 'success-message' : 'error-message'}>
                 {goalsMessage.text}
+              </div>
+            )}
+
+            {/* AI Explanation */}
+            {aiExplanation && (
+              <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-sm text-slate-700 dark:text-slate-300">
+                <p className="font-medium text-purple-700 dark:text-purple-300 mb-1">AI Recommendation:</p>
+                {aiExplanation}
               </div>
             )}
 

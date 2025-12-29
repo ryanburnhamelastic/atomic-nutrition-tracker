@@ -14,6 +14,8 @@ import {
   DailySummary,
   GeminiAnalysisResult,
   GeminiParseResult,
+  GoalGenerationInput,
+  GeneratedGoals,
 } from '../types';
 
 const API_BASE = '/api';
@@ -225,6 +227,11 @@ export const geminiApi = {
     apiRequest<GeminiParseResult>('/parse-food-text', {
       method: 'POST',
       body: JSON.stringify({ text }),
+    }),
+  generateGoals: (input: GoalGenerationInput) =>
+    apiRequest<GeneratedGoals>('/generate-goals', {
+      method: 'POST',
+      body: JSON.stringify(input),
     }),
 };
 

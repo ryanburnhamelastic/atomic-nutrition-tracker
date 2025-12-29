@@ -243,3 +243,27 @@ export interface GeminiParseResult {
   foods: GeminiFood[];
   originalText: string;
 }
+
+/**
+ * Input for AI goal generation
+ */
+export interface GoalGenerationInput {
+  age: number;
+  sex: 'male' | 'female';
+  heightCm: number;
+  weightKg: number;
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+  goal: 'lose_weight' | 'maintain' | 'gain_muscle';
+  additionalContext?: string;
+}
+
+/**
+ * Response from AI goal generation
+ */
+export interface GeneratedGoals {
+  calorieTarget: number;
+  proteinTarget: number;
+  carbsTarget: number;
+  fatTarget: number;
+  explanation: string;
+}
