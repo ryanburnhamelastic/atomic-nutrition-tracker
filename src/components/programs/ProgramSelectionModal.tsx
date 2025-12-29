@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PROGRAM_TEMPLATES, calculateMacrosFromTemplate, UserStats as ProgramUserStats } from '../../lib/programTemplates';
 import { userProgramsApi } from '../../lib/api';
 
@@ -32,6 +32,15 @@ export default function ProgramSelectionModal({ isOpen, onClose, onSuccess }: Pr
     carbs: 200,
     fat: 65,
   });
+  const [autoCalcCalories, setAutoCalcCalories] = useState(false);
+
+  // Auto-calculate calories from macros when enabled
+  useEffect(() => {
+    if (autoCalcCalories && selectedTemplateId === 'custom') {
+      const calculatedCalories = (customMacros.protein * 4) + (customMacros.carbs * 4) + (customMacros.fat * 9);
+      setCustomMacros(prev => ({ ...prev, calories: Math.round(calculatedCalories) }));
+    }
+  }, [customMacros.protein, customMacros.carbs, customMacros.fat, autoCalcCalories, selectedTemplateId]);
 
   if (!isOpen) return null;
 
@@ -153,14 +162,31 @@ export default function ProgramSelectionModal({ isOpen, onClose, onSuccess }: Pr
                   </p>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
-                      <label className="label">Calories</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="label">Calories</label>
+                        <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+                          <input
+                            type="checkbox"
+                            checked={autoCalcCalories}
+                            onChange={(e) => setAutoCalcCalories(e.target.checked)}
+                            className="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          Auto-calc
+                        </label>
+                      </div>
                       <input
                         type="number"
                         value={customMacros.calories}
                         onChange={(e) => setCustomMacros({ ...customMacros, calories: Number(e.target.value) })}
-                        className="input"
+                        className={`input ${autoCalcCalories ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
                         min="0"
+                        disabled={autoCalcCalories}
                       />
+                      {autoCalcCalories && (
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          = ({customMacros.protein}g × 4) + ({customMacros.carbs}g × 4) + ({customMacros.fat}g × 9)
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="label">Protein (g)</label>
