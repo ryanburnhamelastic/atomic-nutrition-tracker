@@ -52,14 +52,18 @@ async function apiRequest<T>(
     if (getAuthToken) {
       const token = await getAuthToken();
       console.log('[API] Token retrieved:', token ? 'Yes' : 'No');
+      console.log('[API] Token value (first 20 chars):', token ? token.substring(0, 20) + '...' : 'null');
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+        console.log('[API] Authorization header set for:', endpoint);
       } else {
         console.warn('[API] No auth token available for request:', endpoint);
       }
     } else {
       console.warn('[API] getAuthToken not initialized for request:', endpoint);
     }
+
+    console.log('[API] Final headers:', Object.keys(headers));
 
     const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
