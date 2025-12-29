@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { PROGRAM_TEMPLATES, calculateMacrosFromTemplate, UserStats as ProgramUserStats } from '../../lib/programTemplates';
-import { userProgramsApi } from '../../lib/api';
+import { userProgramsApi, geminiApi } from '../../lib/api';
+import { GoalGenerationInput } from '../../types';
+import LoadingSpinner from '../common/LoadingSpinner';
 
 interface ProgramSelectionModalProps {
   isOpen: boolean;
@@ -34,6 +36,24 @@ export default function ProgramSelectionModal({ isOpen, onClose, onSuccess }: Pr
   });
   const [autoCalcCalories, setAutoCalcCalories] = useState(false);
 
+  // AI goal generation state
+  const [aiLoading, setAILoading] = useState(false);
+  const [aiGenerated, setAIGenerated] = useState(false);
+  const [aiForm, setAIForm] = useState<GoalGenerationInput>({
+    age: 30,
+    sex: 'male',
+    heightCm: 175,
+    weightKg: 75,
+    activityLevel: 'moderate',
+    goal: 'maintain',
+  });
+  const [aiMacros, setAIMacros] = useState({
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0,
+  });
+
   // Auto-calculate calories from macros when enabled
   useEffect(() => {
     if (autoCalcCalories && selectedTemplateId === 'custom') {
@@ -56,21 +76,45 @@ export default function ProgramSelectionModal({ isOpen, onClose, onSuccess }: Pr
     setSelectedTemplateId(null);
   };
 
+  const handleGenerateAI = async () => {
+    setAILoading(true);
+    const response = await geminiApi.generateGoals(aiForm);
+    setAILoading(false);
+
+    if (response.data) {
+      setAIMacros({
+        calories: response.data.calorieTarget,
+        protein: response.data.proteinTarget,
+        carbs: response.data.carbsTarget,
+        fat: response.data.fatTarget,
+      });
+      setAIGenerated(true);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!selectedTemplate) return;
 
     setLoading(true);
     try {
-      // Use custom macros if custom template, otherwise calculate from template
-      const macros = selectedTemplate.id === 'custom'
-        ? customMacros
-        : calculateMacrosFromTemplate(userStats, selectedTemplate);
+      // Determine which macros to use based on template type
+      let macros;
+      let startingWeight = userStats.weightKg;
+
+      if (selectedTemplate.id === 'custom') {
+        macros = customMacros;
+      } else if (selectedTemplate.id === 'ai_generated') {
+        macros = aiMacros;
+        startingWeight = aiForm.weightKg;
+      } else {
+        macros = calculateMacrosFromTemplate(userStats, selectedTemplate);
+      }
 
       await userProgramsApi.create({
         programId: selectedTemplate.id,
         startDate,
         durationWeeks,
-        startingWeightKg: userStats.weightKg,
+        startingWeightKg: startingWeight,
         targetWeightKg: targetWeight ? Number(targetWeight) : undefined,
         calorieTarget: macros.calories,
         proteinTarget: macros.protein,
@@ -233,6 +277,139 @@ export default function ProgramSelectionModal({ isOpen, onClose, onSuccess }: Pr
                       Used for tracking weight progress
                     </p>
                   </div>
+                </div>
+              ) : selectedTemplate?.id === 'ai_generated' ? (
+                /* AI Goal Generation */
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    {aiGenerated ? 'AI Generated Targets' : 'Tell Us About Yourself'}
+                  </h3>
+                  {!aiGenerated ? (
+                    <>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        Enter your details and let AI calculate personalized nutrition goals based on evidence-based formulas.
+                      </p>
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="label">Age</label>
+                          <input
+                            type="number"
+                            className="input"
+                            value={aiForm.age}
+                            onChange={(e) => setAIForm({ ...aiForm, age: Number(e.target.value) })}
+                            min="13"
+                            max="120"
+                          />
+                        </div>
+                        <div>
+                          <label className="label">Sex</label>
+                          <select
+                            className="input"
+                            value={aiForm.sex}
+                            onChange={(e) => setAIForm({ ...aiForm, sex: e.target.value as 'male' | 'female' })}
+                          >
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="label">Height (cm)</label>
+                          <input
+                            type="number"
+                            className="input"
+                            value={aiForm.heightCm}
+                            onChange={(e) => setAIForm({ ...aiForm, heightCm: Number(e.target.value) })}
+                            min="100"
+                            max="250"
+                          />
+                        </div>
+                        <div>
+                          <label className="label">Weight (kg)</label>
+                          <input
+                            type="number"
+                            className="input"
+                            value={aiForm.weightKg}
+                            onChange={(e) => setAIForm({ ...aiForm, weightKg: Number(e.target.value) })}
+                            min="30"
+                            max="300"
+                            step="0.1"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="label">Activity Level</label>
+                          <select
+                            className="input"
+                            value={aiForm.activityLevel}
+                            onChange={(e) => setAIForm({ ...aiForm, activityLevel: e.target.value as GoalGenerationInput['activityLevel'] })}
+                          >
+                            <option value="sedentary">Sedentary</option>
+                            <option value="light">Lightly Active</option>
+                            <option value="moderate">Moderately Active</option>
+                            <option value="active">Active</option>
+                            <option value="very_active">Very Active</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="label">Goal</label>
+                          <select
+                            className="input"
+                            value={aiForm.goal}
+                            onChange={(e) => setAIForm({ ...aiForm, goal: e.target.value as GoalGenerationInput['goal'] })}
+                          >
+                            <option value="lose_weight">Lose Weight</option>
+                            <option value="maintain">Maintain Weight</option>
+                            <option value="gain_muscle">Build Muscle</option>
+                          </select>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleGenerateAI}
+                        disabled={aiLoading}
+                        className="btn btn-primary w-full bg-purple-600 hover:bg-purple-700"
+                      >
+                        {aiLoading ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <LoadingSpinner size="sm" />
+                            Generating...
+                          </span>
+                        ) : (
+                          <span className="flex items-center justify-center gap-2">
+                            ✨ Generate My Targets
+                          </span>
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    /* AI Generated Results */
+                    <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                      <div className="grid grid-cols-4 gap-4 text-center mb-4">
+                        <div>
+                          <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{aiMacros.calories}</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">Calories</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-green-600 dark:text-green-400">{aiMacros.protein}g</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">Protein</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{aiMacros.carbs}g</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">Carbs</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{aiMacros.fat}g</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">Fat</div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setAIGenerated(false)}
+                        className="text-sm text-purple-600 dark:text-purple-400 hover:underline"
+                      >
+                        ← Regenerate with different inputs
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>

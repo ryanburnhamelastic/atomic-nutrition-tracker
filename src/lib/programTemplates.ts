@@ -131,6 +131,15 @@ export const PROGRAM_TEMPLATES: ProgramTemplate[] = [
     proteinPerKg: 0,    // Not used for custom
     fatPerKg: 0,        // Not used for custom
   },
+  {
+    id: 'ai_generated',
+    name: 'AI Generated',
+    description: 'Let AI calculate your personalized macro targets',
+    icon: '✨',
+    calorieModifier: 0, // Calculated by AI
+    proteinPerKg: 0,    // Calculated by AI
+    fatPerKg: 0,        // Calculated by AI
+  },
 ];
 
 /**
