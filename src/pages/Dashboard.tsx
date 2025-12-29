@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNutrition } from '../contexts/NutritionContext';
-import { foodEntriesApi, userStatsApi } from '../lib/api';
+import { foodEntriesApi, userStatsApi, userProgramsApi, weightEntriesApi } from '../lib/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import DailyProgress from '../components/nutrition/DailyProgress';
 import MealSection from '../components/nutrition/MealSection';
 import WeightLogSection from '../components/weight/WeightLogSection';
 import StreakCounter from '../components/achievements/StreakCounter';
 import AchievementBadges from '../components/achievements/AchievementBadges';
-import { FoodEntry, MealType, UserStats } from '../types';
+import ActiveProgramCard from '../components/programs/ActiveProgramCard';
+import ProgramSelectionModal from '../components/programs/ProgramSelectionModal';
+import ProgramCompletionModal from '../components/programs/ProgramCompletionModal';
+import { FoodEntry, MealType, UserStats, UserProgram } from '../types';
 
 // Helper to format date for display
 function formatDate(dateString: string): string {
@@ -54,6 +57,14 @@ export default function Dashboard() {
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
 
+  // Program state
+  const [activeProgram, setActiveProgram] = useState<UserProgram | null>(null);
+  const [showProgramSelection, setShowProgramSelection] = useState(false);
+  const [showProgramCompletion, setShowProgramCompletion] = useState(false);
+  const [completedProgram, setCompletedProgram] = useState<UserProgram | null>(null);
+  const [currentWeight, setCurrentWeight] = useState<number | undefined>(undefined);
+  const [programLoading, setProgramLoading] = useState(true);
+
   // Load user stats
   useEffect(() => {
     loadUserStats();
@@ -66,6 +77,39 @@ export default function Dashboard() {
       setUserStats(response.data);
     }
     setStatsLoading(false);
+  };
+
+  // Load active program and current weight
+  useEffect(() => {
+    loadProgram();
+  }, []);
+
+  const loadProgram = async () => {
+    setProgramLoading(true);
+
+    // Load active program
+    const programResponse = await userProgramsApi.get(false);
+    if (programResponse.data) {
+      const program = programResponse.data.active;
+
+      // Check if program just completed
+      if (program && program.status === 'completed' && !sessionStorage.getItem(`program_${program.id}_celebrated`)) {
+        setCompletedProgram(program);
+        setShowProgramCompletion(true);
+        sessionStorage.setItem(`program_${program.id}_celebrated`, 'true');
+        setActiveProgram(null);
+      } else if (program && program.status === 'active') {
+        setActiveProgram(program);
+      }
+    }
+
+    // Load current weight
+    const weightResponse = await weightEntriesApi.list(undefined, undefined, 1);
+    if (weightResponse.data && weightResponse.data.length > 0) {
+      setCurrentWeight(weightResponse.data[0].weight_kg);
+    }
+
+    setProgramLoading(false);
   };
 
   // Handle edit entry - navigate to LogFood with entry data
@@ -88,6 +132,22 @@ export default function Dashboard() {
 
   // Check if viewing today
   const isToday = selectedDate === new Date().toISOString().split('T')[0];
+
+  // Program handlers
+  const handleProgramSuccess = () => {
+    loadProgram();
+  };
+
+  const handleCompletionClose = () => {
+    setShowProgramCompletion(false);
+    setCompletedProgram(null);
+  };
+
+  const handleStartNewProgram = () => {
+    setShowProgramCompletion(false);
+    setCompletedProgram(null);
+    setShowProgramSelection(true);
+  };
 
   // Default empty summary
   const summary = dailySummary || {
@@ -153,6 +213,37 @@ export default function Dashboard() {
             <AchievementBadges stats={userStats} loading={statsLoading} />
           </div>
 
+          {/* Active Program or Start Program Button */}
+          {programLoading ? (
+            <div className="card">
+              <div className="flex justify-center py-8">
+                <LoadingSpinner size="md" />
+              </div>
+            </div>
+          ) : activeProgram ? (
+            <ActiveProgramCard
+              program={activeProgram}
+              currentWeight={currentWeight}
+              onChangeProgram={() => setShowProgramSelection(true)}
+            />
+          ) : (
+            <div className="card text-center py-8">
+              <div className="text-4xl mb-3">📊</div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                No Active Program
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Choose a nutrition program to track your macros and reach your goals
+              </p>
+              <button
+                onClick={() => setShowProgramSelection(true)}
+                className="btn-primary"
+              >
+                Start a Program
+              </button>
+            </div>
+          )}
+
           {/* Weight Log */}
           <WeightLogSection />
 
@@ -168,6 +259,22 @@ export default function Dashboard() {
           ))}
         </>
       )}
+
+      {/* Program Selection Modal */}
+      <ProgramSelectionModal
+        isOpen={showProgramSelection}
+        onClose={() => setShowProgramSelection(false)}
+        onSuccess={handleProgramSuccess}
+        currentWeight={currentWeight}
+      />
+
+      {/* Program Completion Modal */}
+      <ProgramCompletionModal
+        isOpen={showProgramCompletion}
+        completedProgram={completedProgram}
+        onClose={handleCompletionClose}
+        onStartNewProgram={handleStartNewProgram}
+      />
     </div>
   );
 }
