@@ -52,9 +52,11 @@ export default function Analytics() {
     );
   }
 
-  // Format date for display
+  // Format date for display (handle both YYYY-MM-DD and ISO timestamps)
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr + 'T00:00:00');
+    // Normalize to YYYY-MM-DD format
+    const normalized = dateStr.split('T')[0];
+    const date = new Date(normalized + 'T00:00:00');
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
