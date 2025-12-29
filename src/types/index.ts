@@ -72,6 +72,7 @@ export interface WeightEntry {
   user_id: string;
   date: string;
   weight_kg: number;
+  trend_weight: number | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -299,6 +300,7 @@ export interface GeneratedGoals {
 export interface WeightDataPoint {
   date: string;
   weight: number;
+  trendWeight: number | null;
 }
 
 /**

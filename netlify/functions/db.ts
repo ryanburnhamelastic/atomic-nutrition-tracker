@@ -151,6 +151,11 @@ export async function initDb(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_weight_entries_user_date ON weight_entries(user_id, date DESC)
   `;
 
+  // Add trend_weight column if it doesn't exist (migration for existing users)
+  await sql`
+    ALTER TABLE weight_entries ADD COLUMN IF NOT EXISTS trend_weight DECIMAL(5,2)
+  `;
+
   // Favorite foods (user's favorited base foods for quick add)
   await sql`
     CREATE TABLE IF NOT EXISTS favorite_foods (

@@ -251,9 +251,21 @@ export default function Analytics() {
       {/* Weight Trend Chart */}
       {data.weightTrend.length > 0 && (
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Weight Trend
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Weight Trend
+            </h2>
+            <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
+                <span className="text-gray-600 dark:text-gray-400">Actual</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-0.5 bg-emerald-500"></div>
+                <span className="text-gray-600 dark:text-gray-400">Trend</span>
+              </div>
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={data.weightTrend}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
@@ -274,6 +286,7 @@ export default function Analytics() {
                 }}
                 labelStyle={{ color: 'rgb(203 213 225)' }}
               />
+              {/* Actual weight with dots */}
               <Line
                 type="monotone"
                 dataKey="weight"
@@ -281,6 +294,17 @@ export default function Analytics() {
                 strokeWidth={2}
                 dot={{ fill: '#6366f1', r: 4 }}
                 activeDot={{ r: 6 }}
+                name="Weight"
+              />
+              {/* Trend weight as smooth line */}
+              <Line
+                type="monotone"
+                dataKey="trendWeight"
+                stroke="#10b981"
+                strokeWidth={2}
+                dot={false}
+                strokeDasharray="5 5"
+                name="Trend"
               />
             </LineChart>
           </ResponsiveContainer>

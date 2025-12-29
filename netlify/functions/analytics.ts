@@ -163,6 +163,7 @@ const handler: Handler = async (event: HandlerEvent) => {
         weightTrend: weightEntries.map((w: any) => ({
           date: w.date,
           weight: Number(w.weight_kg),
+          trendWeight: w.trend_weight ? Number(w.trend_weight) : null,
         })),
         dailyNutrition: dailyDataWithCompliance,
         compliance: {

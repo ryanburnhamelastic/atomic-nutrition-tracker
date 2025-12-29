@@ -101,13 +101,36 @@ const handler: Handler = async (event: HandlerEvent) => {
         };
       }
 
+      // Calculate trend weight using exponentially weighted moving average (EWMA)
+      // Formula: trend = (prev_trend × smoothing) + (current_weight × (1 - smoothing))
+      const smoothingFactor = 0.65; // Similar to MacroFactor's algorithm
+
+      // Get the most recent previous weight entry
+      const previousEntries = await sql`
+        SELECT trend_weight, weight_kg FROM weight_entries
+        WHERE user_id = ${userId} AND date < ${date}
+        ORDER BY date DESC
+        LIMIT 1
+      `;
+
+      let trendWeight: number;
+      if (previousEntries.length === 0) {
+        // First entry - trend equals actual weight
+        trendWeight = weightKg;
+      } else {
+        // Calculate trend based on previous trend (or previous weight if no trend exists)
+        const previousTrend = previousEntries[0].trend_weight || previousEntries[0].weight_kg;
+        trendWeight = (Number(previousTrend) * smoothingFactor) + (weightKg * (1 - smoothingFactor));
+      }
+
       // Upsert - insert or update if date already exists
       const result = await sql`
-        INSERT INTO weight_entries (user_id, date, weight_kg, notes)
-        VALUES (${userId}, ${date}, ${weightKg}, ${notes || null})
+        INSERT INTO weight_entries (user_id, date, weight_kg, trend_weight, notes)
+        VALUES (${userId}, ${date}, ${weightKg}, ${trendWeight}, ${notes || null})
         ON CONFLICT (user_id, date)
         DO UPDATE SET
           weight_kg = ${weightKg},
+          trend_weight = ${trendWeight},
           notes = ${notes || null},
           updated_at = NOW()
         RETURNING *
