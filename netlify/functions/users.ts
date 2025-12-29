@@ -22,7 +22,7 @@ const handler: Handler = async (event: HandlerEvent) => {
     // GET - Fetch current user
     if (event.httpMethod === 'GET') {
       const users = await sql`
-        SELECT id, clerk_user_id, email, first_name, last_name, created_at, updated_at
+        SELECT id, clerk_user_id, email, first_name, last_name, unit_system, created_at, updated_at
         FROM users
         WHERE clerk_user_id = ${clerkUserId}
       `;
@@ -71,7 +71,7 @@ const handler: Handler = async (event: HandlerEvent) => {
       const users = await sql`
         INSERT INTO users (clerk_user_id, email, first_name, last_name)
         VALUES (${clerkUserId}, ${email}, ${firstName || null}, ${lastName || null})
-        RETURNING id, clerk_user_id, email, first_name, last_name, created_at, updated_at
+        RETURNING id, clerk_user_id, email, first_name, last_name, unit_system, created_at, updated_at
       `;
 
       return {
@@ -84,24 +84,34 @@ const handler: Handler = async (event: HandlerEvent) => {
     // PUT - Update user
     if (event.httpMethod === 'PUT') {
       const body = JSON.parse(event.body || '{}');
-      const { firstName, lastName } = body;
+      const { firstName, lastName, unitSystem } = body;
 
-      const users = await sql`
-        UPDATE users
-        SET first_name = ${firstName || null},
-            last_name = ${lastName || null},
-            updated_at = NOW()
-        WHERE clerk_user_id = ${clerkUserId}
-        RETURNING id, clerk_user_id, email, first_name, last_name, created_at, updated_at
+      // Get current user to preserve fields not being updated
+      const current = await sql`
+        SELECT first_name, last_name, unit_system FROM users WHERE clerk_user_id = ${clerkUserId}
       `;
 
-      if (users.length === 0) {
+      if (current.length === 0) {
         return {
           statusCode: 404,
           headers: corsHeaders,
           body: JSON.stringify({ error: 'User not found' }),
         };
       }
+
+      const updatedFirstName = firstName !== undefined ? (firstName || null) : current[0].first_name;
+      const updatedLastName = lastName !== undefined ? (lastName || null) : current[0].last_name;
+      const updatedUnitSystem = unitSystem !== undefined ? unitSystem : current[0].unit_system;
+
+      const users = await sql`
+        UPDATE users
+        SET first_name = ${updatedFirstName},
+            last_name = ${updatedLastName},
+            unit_system = ${updatedUnitSystem},
+            updated_at = NOW()
+        WHERE clerk_user_id = ${clerkUserId}
+        RETURNING id, clerk_user_id, email, first_name, last_name, unit_system, created_at, updated_at
+      `;
 
       return {
         statusCode: 200,

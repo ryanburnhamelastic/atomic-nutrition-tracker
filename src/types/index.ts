@@ -7,6 +7,7 @@ export interface User {
   email: string;
   first_name: string | null;
   last_name: string | null;
+  unit_system: 'metric' | 'imperial';
   created_at: string;
   updated_at: string;
 }
@@ -35,6 +36,7 @@ export interface CreateUserInput {
 export interface UpdateUserInput {
   firstName?: string;
   lastName?: string;
+  unitSystem?: 'metric' | 'imperial';
 }
 
 // ============================================

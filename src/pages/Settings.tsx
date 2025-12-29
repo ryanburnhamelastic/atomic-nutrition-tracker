@@ -2,14 +2,19 @@ import { useState, useEffect } from 'react';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNutrition } from '../contexts/NutritionContext';
-import { goalsApi, geminiApi } from '../lib/api';
+import { goalsApi, geminiApi, usersApi } from '../lib/api';
 import { GoalGenerationInput } from '../types';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 export default function Settings() {
-  const { userEmail, userName, user } = useAuthContext();
+  const { userEmail, userName, user, refreshUser } = useAuthContext();
   const { isDarkMode, toggleTheme } = useTheme();
   const { goals, goalsLoading, refreshGoals } = useNutrition();
+
+  // User preferences state
+  const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial'>('metric');
+  const [savingPreferences, setSavingPreferences] = useState(false);
+  const [preferencesMessage, setPreferencesMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Goals form state
   const [calorieTarget, setCalorieTarget] = useState('2000');
@@ -36,6 +41,13 @@ export default function Settings() {
 
   // Track if we're loading initial data to prevent auto-calc from overwriting
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Load user preferences
+  useEffect(() => {
+    if (user) {
+      setUnitSystem(user.unit_system);
+    }
+  }, [user]);
 
   // Populate form when goals load
   useEffect(() => {
@@ -106,6 +118,26 @@ export default function Settings() {
       setAIExplanation(response.data.explanation);
       setShowAIGoals(false);
       setGoalsMessage({ type: 'success', text: 'AI goals generated! Review and save below.' });
+    }
+  };
+
+  const handleUnitSystemChange = async (newUnitSystem: 'metric' | 'imperial') => {
+    setUnitSystem(newUnitSystem);
+    setSavingPreferences(true);
+    setPreferencesMessage(null);
+
+    const response = await usersApi.update({ unitSystem: newUnitSystem });
+
+    setSavingPreferences(false);
+
+    if (response.error) {
+      setPreferencesMessage({ type: 'error', text: response.error });
+      // Revert on error
+      setUnitSystem(user?.unit_system || 'metric');
+    } else {
+      setPreferencesMessage({ type: 'success', text: 'Preferences saved!' });
+      refreshUser();
+      setTimeout(() => setPreferencesMessage(null), 3000);
     }
   };
 
@@ -375,6 +407,13 @@ export default function Settings() {
         <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
           Preferences
         </h2>
+
+        {preferencesMessage && (
+          <div className={`mb-4 ${preferencesMessage.type === 'success' ? 'success-message' : 'error-message'}`}>
+            {preferencesMessage.text}
+          </div>
+        )}
+
         <div className="space-y-4">
           {/* Unit System Toggle */}
           <div className="flex items-center justify-between">
@@ -383,27 +422,29 @@ export default function Settings() {
                 Unit System
               </label>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                {useMetric ? 'Using metric (kg, cm)' : 'Using imperial (lbs, ft/in)'}
+                {unitSystem === 'metric' ? 'Using metric (kg, cm)' : 'Using imperial (lbs, ft/in)'}
               </p>
             </div>
             <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5">
               <button
-                onClick={() => setUseMetric(true)}
+                onClick={() => handleUnitSystemChange('metric')}
+                disabled={savingPreferences}
                 className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  useMetric
+                  unitSystem === 'metric'
                     ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
                     : 'text-slate-600 dark:text-slate-400'
-                }`}
+                } ${savingPreferences ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 Metric
               </button>
               <button
-                onClick={() => setUseMetric(false)}
+                onClick={() => handleUnitSystemChange('imperial')}
+                disabled={savingPreferences}
                 className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  !useMetric
+                  unitSystem === 'imperial'
                     ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
                     : 'text-slate-600 dark:text-slate-400'
-                }`}
+                } ${savingPreferences ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 Imperial
               </button>

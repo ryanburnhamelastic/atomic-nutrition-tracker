@@ -29,6 +29,7 @@ export async function initDb(): Promise<void> {
       email TEXT NOT NULL,
       first_name TEXT,
       last_name TEXT,
+      unit_system TEXT NOT NULL DEFAULT 'metric' CHECK (unit_system IN ('metric', 'imperial')),
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
@@ -36,6 +37,11 @@ export async function initDb(): Promise<void> {
 
   await sql`
     CREATE INDEX IF NOT EXISTS idx_users_clerk_user_id ON users(clerk_user_id)
+  `;
+
+  // Add unit_system column if it doesn't exist (migration for existing users)
+  await sql`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS unit_system TEXT NOT NULL DEFAULT 'metric'
   `;
 
   // User nutrition goals
