@@ -189,6 +189,33 @@ export async function initDb(): Promise<void> {
   await sql`
     CREATE INDEX IF NOT EXISTS idx_user_stats_user ON user_stats(user_id)
   `;
+
+  // User programs (time-bound macro programs like cuts/bulks)
+  await sql`
+    CREATE TABLE IF NOT EXISTS user_programs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+      program_id TEXT NOT NULL,
+      start_date DATE NOT NULL,
+      end_date DATE NOT NULL,
+      duration_weeks INTEGER NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('active', 'completed', 'cancelled')) DEFAULT 'active',
+      starting_weight_kg DECIMAL(5,2),
+      target_weight_kg DECIMAL(5,2),
+      ending_weight_kg DECIMAL(5,2),
+      calorie_target INTEGER NOT NULL,
+      protein_target INTEGER NOT NULL,
+      carbs_target INTEGER NOT NULL,
+      fat_target INTEGER NOT NULL,
+      notes TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_user_programs_user_status ON user_programs(user_id, status)
+  `;
 }
 
 /**

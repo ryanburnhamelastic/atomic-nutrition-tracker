@@ -405,3 +405,54 @@ export interface UpdateStatsResponse {
   stats: UserStats;
   newAchievements: Achievement[];
 }
+
+// ============================================
+// Program Types
+// ============================================
+
+/**
+ * User program (time-bound macro program)
+ */
+export interface UserProgram {
+  id: string;
+  user_id: string;
+  program_id: string;
+  start_date: string;
+  end_date: string;
+  duration_weeks: number;
+  status: 'active' | 'completed' | 'cancelled';
+  starting_weight_kg: number | null;
+  target_weight_kg: number | null;
+  ending_weight_kg: number | null;
+  calorie_target: number;
+  protein_target: number;
+  carbs_target: number;
+  fat_target: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Input for creating a new program
+ */
+export interface CreateProgramInput {
+  programId: string;
+  startDate: string;
+  durationWeeks: number;
+  startingWeightKg?: number;
+  targetWeightKg?: number;
+  calorieTarget: number;
+  proteinTarget: number;
+  carbsTarget: number;
+  fatTarget: number;
+  notes?: string;
+}
+
+/**
+ * Response from programs API
+ */
+export interface ProgramsResponse {
+  active: UserProgram | null;
+  history: UserProgram[];
+}

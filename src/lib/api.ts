@@ -22,6 +22,9 @@ import {
   FavoriteFood,
   UserStats,
   UpdateStatsResponse,
+  UserProgram,
+  CreateProgramInput,
+  ProgramsResponse,
 } from '../types';
 
 const API_BASE = '/api';
@@ -307,6 +310,24 @@ export const userStatsApi = {
   update: () => apiRequest<UpdateStatsResponse>('/user-stats', {
     method: 'POST',
   }),
+};
+
+/**
+ * User Programs API
+ */
+export const userProgramsApi = {
+  get: (includeHistory = false) =>
+    apiRequest<ProgramsResponse>(`/user-programs?history=${includeHistory}`),
+  create: (data: CreateProgramInput) =>
+    apiRequest<UserProgram>('/user-programs', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: { status?: string; endingWeightKg?: number; notes?: string }) =>
+    apiRequest<UserProgram>(`/user-programs/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
 };
 
 // Export for file uploads if needed
