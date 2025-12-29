@@ -28,7 +28,7 @@ function getTodayDate(): string {
 }
 
 export function NutritionProvider({ children }: { children: ReactNode }) {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
 
   // Selected date defaults to today
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDate());
@@ -43,7 +43,7 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
 
   // Fetch user's nutrition goals
   const refreshGoals = useCallback(async () => {
-    if (!isSignedIn) return;
+    if (!isLoaded || !isSignedIn) return;
 
     setGoalsLoading(true);
     try {
@@ -56,11 +56,11 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
     } finally {
       setGoalsLoading(false);
     }
-  }, [isSignedIn]);
+  }, [isLoaded, isSignedIn]);
 
   // Fetch daily summary for selected date
   const refreshSummary = useCallback(async () => {
-    if (!isSignedIn) return;
+    if (!isLoaded || !isSignedIn) return;
 
     setSummaryLoading(true);
     try {
@@ -73,25 +73,25 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
     } finally {
       setSummaryLoading(false);
     }
-  }, [isSignedIn, selectedDate]);
+  }, [isLoaded, isSignedIn, selectedDate]);
 
   // Load goals when user signs in
   useEffect(() => {
-    if (isSignedIn) {
+    if (isLoaded && isSignedIn) {
       refreshGoals();
     } else {
       setGoals(null);
     }
-  }, [isSignedIn, refreshGoals]);
+  }, [isLoaded, isSignedIn, refreshGoals]);
 
   // Load summary when date changes or user signs in
   useEffect(() => {
-    if (isSignedIn) {
+    if (isLoaded && isSignedIn) {
       refreshSummary();
     } else {
       setDailySummary(null);
     }
-  }, [isSignedIn, selectedDate, refreshSummary]);
+  }, [isLoaded, isSignedIn, selectedDate, refreshSummary]);
 
   const value: NutritionContextType = {
     selectedDate,
