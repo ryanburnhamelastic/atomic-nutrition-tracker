@@ -211,3 +211,35 @@ export interface ReportData {
   averages: NutritionTotals;
   dailyData: DailyDataPoint[];
 }
+
+// ============================================
+// Gemini AI Types
+// ============================================
+
+/**
+ * Food item returned by Gemini AI analysis
+ */
+export interface GeminiFood {
+  name: string;
+  servingSize: number;
+  servingUnit: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+/**
+ * Response from image analysis endpoint
+ */
+export interface GeminiAnalysisResult {
+  foods: GeminiFood[];
+}
+
+/**
+ * Response from text parsing endpoint
+ */
+export interface GeminiParseResult {
+  foods: GeminiFood[];
+  originalText: string;
+}

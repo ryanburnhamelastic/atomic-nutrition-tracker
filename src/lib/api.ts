@@ -12,6 +12,8 @@ import {
   CreateFoodEntryInput,
   UpdateFoodEntryInput,
   DailySummary,
+  GeminiAnalysisResult,
+  GeminiParseResult,
 } from '../types';
 
 const API_BASE = '/api';
@@ -208,6 +210,22 @@ export interface USDASearchResult {
 export const usdaApi = {
   search: (query: string, limit = 20) =>
     apiRequest<USDASearchResult>(`/usda-search?q=${encodeURIComponent(query)}&limit=${limit}`),
+};
+
+/**
+ * Gemini AI API (food analysis)
+ */
+export const geminiApi = {
+  analyzeImage: (imageBase64: string, mimeType = 'image/jpeg') =>
+    apiRequest<GeminiAnalysisResult>('/analyze-food-image', {
+      method: 'POST',
+      body: JSON.stringify({ image: imageBase64, mimeType }),
+    }),
+  parseText: (text: string) =>
+    apiRequest<GeminiParseResult>('/parse-food-text', {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    }),
 };
 
 // Export for file uploads if needed

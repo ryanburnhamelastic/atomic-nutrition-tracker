@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useNutrition } from '../contexts/NutritionContext';
+import AIFoodInput from '../components/food/AIFoodInput';
 import FoodSearchSection from '../components/food/FoodSearchSection';
 import QuickAddForm from '../components/food/QuickAddForm';
 import { FoodEntry, MealType } from '../types';
@@ -79,6 +80,15 @@ export default function LogFood() {
           ))}
         </div>
       </div>
+
+      {/* AI Food Input (only show when not editing) */}
+      {!editEntry && (
+        <AIFoodInput
+          date={selectedDate}
+          mealType={selectedMeal}
+          onSuccess={handleSuccess}
+        />
+      )}
 
       {/* Food Search (only show when not editing) */}
       {!editEntry && (
