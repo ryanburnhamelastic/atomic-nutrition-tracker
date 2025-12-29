@@ -43,7 +43,12 @@ export default function WeightLogSection() {
     setLoading(true);
     const response = await weightEntriesApi.list(undefined, undefined, 7);
     if (response.data) {
-      setEntries(response.data);
+      // Convert weight_kg from string to number (PostgreSQL DECIMAL comes as string)
+      const normalizedEntries = response.data.map(entry => ({
+        ...entry,
+        weight_kg: Number(entry.weight_kg),
+      }));
+      setEntries(normalizedEntries);
     }
     setLoading(false);
   };
