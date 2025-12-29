@@ -1,0 +1,25 @@
+Atomic Tracker: Technical SpecificationThis document serves as the technical blueprint for building the Atomic Tracker, a minimalist, data-driven habit and nutrition application.1. Project OverviewGoal: Lose 15 lbs (225 lbs $\to$ 210 lbs).Framework: Atomic Habits (Identity-based habits, friction reduction).Methodology: 30-minute daily walks, Jeff Nippard’s Min-Max training adherence, and calorie/protein tracking.AI Integration: Gemini API as an optional utility for NLP logging and strategic planning.2. Core ModulesA. The Identity Checklist (Habits)A high-visibility daily list of "Yes/No" checkboxes.Core Habits:30-Min Walk: (Trigger: Post-lunch laptop close).Workout: (Reference to external Min-Max app).Custom Habits: Ability to add/remove custom checkboxes.Visualization: * "Don't Break the Chain" streak counter.GitHub-style activity heatmap for long-term consistency.B. Nutrition & Weight EngineA manual-first tracking system with a focus on trend data.Manual Inputs:Scale Weight: Daily morning entry.Calories & Protein: User-defined daily targets (e.g., 2200 kcal / 180g protein).Computed Metrics:Trend Weight: 7-day exponentially weighted moving average (EWMA) to filter out water weight noise.Travel Mode Toggle: * Manual Trigger: A UI switch for traveling.Behavior: Simplifies UI to show only "Protein" and "Walk" metrics. Hides strict calorie targets to prevent tracking burnout.C. Gemini AI Utility Layer (Optional)Gemini acts as a "Plugin" for efficiency.NLP Log Box: Users type a meal description $\to$ Gemini returns structured JSON macros.Meal Architect: Suggests meals based on remaining daily macros.Travel Assistant: (When Travel Mode is ON) Identifies high-protein options at specific airports or restaurants via Gemini's search tool.3. Data Schema (JSON)JSON{
+  "user_settings": {
+    "target_weight": 210,
+    "daily_cal_target": 2200,
+    "daily_protein_target": 180,
+    "gemini_api_key": "USER_PROVIDED_KEY"
+  },
+  "logs": [
+    {
+      "date": "2025-12-28",
+      "weight": 223.5,
+      "trend_weight": 224.2,
+      "travel_mode": false,
+      "habits": [
+        { "name": "30-Min Walk", "completed": true },
+        { "name": "Workout", "completed": true }
+      ],
+      "nutrition": {
+        "calories": 1850,
+        "protein": 165
+      }
+    }
+  ]
+}
+4. Implementation LogicGemini System Instruction"You are a nutrition data parser. Convert user meal descriptions into structured JSON: { "calories": int, "protein": int, "carbs": int, "fat": int }. If portions aren't specified, assume standard restaurant sizes. Focus on accuracy for protein."Weight Trend Formula$$W_{trend} = W_{today} \cdot \alpha + W_{yesterday\_trend} \cdot (1 - \alpha)$$(Where $\alpha$ is typically 0.1 for a stable 7-day smoothing).5. Build Instructions for Claude CodeInitialize Project: Create a mobile-responsive web app with a clean, dark-themed UI.Habit Component: Implement the daily checklist with local storage persistence.Nutrition Component: Build the manual entry sliders for Calories and Protein.Weight Component: Build the daily weight input and implement the EWMA Trend Weight logic.AI Integration: Add a text area that calls the Gemini 1.5 Flash API to parse meal text into the nutrition state.Travel Mode: Add a global state toggle that modifies the Dashboard UI to focus on "Protein" and "Walks" only.
