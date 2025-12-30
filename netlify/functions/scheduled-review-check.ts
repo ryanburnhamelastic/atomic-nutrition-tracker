@@ -1,4 +1,4 @@
-import { Handler, schedule } from '@netlify/functions';
+import { Handler } from '@netlify/functions';
 import { initDb, getDb } from './db';
 
 /**
