@@ -5,6 +5,8 @@ import QuickAddFavorites from '../components/food/QuickAddFavorites';
 import AIFoodInput from '../components/food/AIFoodInput';
 import FoodSearchSection from '../components/food/FoodSearchSection';
 import QuickAddForm from '../components/food/QuickAddForm';
+import MealPlannerFAB from '../components/common/MealPlannerFAB';
+import MealPlannerModal from '../components/food/MealPlannerModal';
 import { FoodEntry, MealType } from '../types';
 
 const mealLabels: Record<MealType, string> = {
@@ -16,13 +18,27 @@ const mealLabels: Record<MealType, string> = {
 
 interface LocationState {
   editEntry?: FoodEntry;
+  quickAdd?: {
+    date: string;
+    mealType: MealType;
+    name: string;
+    servingSize: number;
+    servingUnit: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
 }
 
 export default function LogFood() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { selectedDate, refreshSummary } = useNutrition();
+  const { selectedDate, refreshSummary, goals, dailySummary } = useNutrition();
+
+  // Meal planner state
+  const [showMealPlanner, setShowMealPlanner] = useState(false);
 
   // Get edit entry from navigation state
   const editEntry = (location.state as LocationState)?.editEntry || null;
@@ -121,6 +137,23 @@ export default function LogFood() {
           onCancel={handleCancel}
         />
       </div>
+
+      {/* Meal Planner FAB - only show when not editing */}
+      {!editEntry && <MealPlannerFAB onClick={() => setShowMealPlanner(true)} />}
+
+      {/* Meal Planner Modal */}
+      <MealPlannerModal
+        isOpen={showMealPlanner}
+        onClose={() => setShowMealPlanner(false)}
+        date={selectedDate}
+        currentMacros={dailySummary?.totals || { calories: 0, protein: 0, carbs: 0, fat: 0 }}
+        goalMacros={{
+          calories: goals?.calorie_target || 2000,
+          protein: goals?.protein_target || 150,
+          carbs: goals?.carbs_target || 200,
+          fat: goals?.fat_target || 65,
+        }}
+      />
     </div>
   );
 }

@@ -551,3 +551,43 @@ export interface ReviewActionResponse {
   goals?: UserGoals;
   message: string;
 }
+
+// ============================================
+// AI Meal Planner Types
+// ============================================
+
+/**
+ * AI-suggested meal with macros and reasoning
+ */
+export interface MealSuggestion {
+  mealType: MealType;
+  foodName: string;
+  servingSize: number;
+  servingUnit: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  reason: string;
+}
+
+/**
+ * General nutrition guidance from AI
+ */
+export interface GeneralGuidance {
+  overview: string;
+  priorities: string[];
+  avoidances: string[];
+  tips: string[];
+}
+
+/**
+ * Complete meal suggestion response from AI
+ */
+export interface MealSuggestionResponse {
+  suggestions: {
+    specificMeals: MealSuggestion[];
+    generalGuidance: GeneralGuidance;
+  };
+  confidence: 'low' | 'medium' | 'high';
+}

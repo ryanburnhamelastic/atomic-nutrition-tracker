@@ -13,6 +13,8 @@ import ProgramSelectionModal from '../components/programs/ProgramSelectionModal'
 import ProgramCompletionModal from '../components/programs/ProgramCompletionModal';
 import ProgramReviewBanner from '../components/programs/ProgramReviewBanner';
 import ProgramReviewModal from '../components/programs/ProgramReviewModal';
+import MealPlannerFAB from '../components/common/MealPlannerFAB';
+import MealPlannerModal from '../components/food/MealPlannerModal';
 import { FoodEntry, MealType, UserStats, UserProgram, ProgramReview } from '../types';
 
 // Helper to format date for display
@@ -81,6 +83,9 @@ export default function Dashboard() {
   // Review state
   const [pendingReview, setPendingReview] = useState<ProgramReview | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
+
+  // Meal planner state
+  const [showMealPlanner, setShowMealPlanner] = useState(false);
 
   // Load user stats
   useEffect(() => {
@@ -304,6 +309,9 @@ export default function Dashboard() {
         </>
       )}
 
+      {/* Meal Planner FAB - only show when viewing today */}
+      {isToday && <MealPlannerFAB onClick={() => setShowMealPlanner(true)} />}
+
       {/* Program Selection Modal */}
       <ProgramSelectionModal
         isOpen={showProgramSelection}
@@ -327,6 +335,20 @@ export default function Dashboard() {
         program={activeProgram}
         onClose={() => setShowReviewModal(false)}
         onSuccess={handleReviewSuccess}
+      />
+
+      {/* Meal Planner Modal */}
+      <MealPlannerModal
+        isOpen={showMealPlanner}
+        onClose={() => setShowMealPlanner(false)}
+        date={selectedDate}
+        currentMacros={summary.totals}
+        goalMacros={{
+          calories: goals?.calorie_target || 2000,
+          protein: goals?.protein_target || 150,
+          carbs: goals?.carbs_target || 200,
+          fat: goals?.fat_target || 65,
+        }}
       />
     </div>
   );

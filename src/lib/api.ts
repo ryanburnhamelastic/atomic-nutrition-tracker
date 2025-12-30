@@ -30,6 +30,7 @@ import {
   AcceptReviewInput,
   RejectReviewInput,
   ReviewActionResponse,
+  MealSuggestionResponse,
 } from '../types';
 
 const API_BASE = '/api';
@@ -372,6 +373,17 @@ export const programReviewsApi = {
     apiRequest<ReviewActionResponse>(`/program-reviews/${id}/reject`, {
       method: 'POST',
       body: JSON.stringify(data),
+    }),
+};
+
+/**
+ * AI Meal Planner API
+ */
+export const mealPlannerApi = {
+  getSuggestions: (date: string, currentTime: string) =>
+    apiRequest<MealSuggestionResponse>('/suggest-meals', {
+      method: 'POST',
+      body: JSON.stringify({ date, currentTime }),
     }),
 };
 
