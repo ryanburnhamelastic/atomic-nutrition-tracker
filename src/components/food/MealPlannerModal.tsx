@@ -13,6 +13,15 @@ interface MealPlannerModalProps {
   goalMacros: NutritionTotals;
 }
 
+interface PlannedFood {
+  id: string;
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
 export default function MealPlannerModal({
   isOpen,
   onClose,
@@ -26,12 +35,57 @@ export default function MealPlannerModal({
   const [error, setError] = useState<string | null>(null);
   const [remainingMeals, setRemainingMeals] = useState<MealType[]>([]);
 
-  // Calculate remaining macros
+  // Planned foods state
+  const [plannedFoods, setPlannedFoods] = useState<PlannedFood[]>([]);
+  const [showAddFood, setShowAddFood] = useState(false);
+  const [newFood, setNewFood] = useState({
+    name: '',
+    calories: '',
+    protein: '',
+    carbs: '',
+    fat: '',
+  });
+
+  // Calculate planned foods totals
+  const plannedTotals = plannedFoods.reduce(
+    (acc, food) => ({
+      calories: acc.calories + food.calories,
+      protein: acc.protein + food.protein,
+      carbs: acc.carbs + food.carbs,
+      fat: acc.fat + food.fat,
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0 }
+  );
+
+  // Calculate remaining macros (accounting for both consumed and planned)
   const remaining = {
-    calories: goalMacros.calories - currentMacros.calories,
-    protein: goalMacros.protein - currentMacros.protein,
-    carbs: goalMacros.carbs - currentMacros.carbs,
-    fat: goalMacros.fat - currentMacros.fat,
+    calories: goalMacros.calories - currentMacros.calories - plannedTotals.calories,
+    protein: goalMacros.protein - currentMacros.protein - plannedTotals.protein,
+    carbs: goalMacros.carbs - currentMacros.carbs - plannedTotals.carbs,
+    fat: goalMacros.fat - currentMacros.fat - plannedTotals.fat,
+  };
+
+  // Add planned food
+  const handleAddPlannedFood = () => {
+    if (!newFood.name || !newFood.calories) return;
+
+    const food: PlannedFood = {
+      id: Date.now().toString(),
+      name: newFood.name,
+      calories: Number(newFood.calories) || 0,
+      protein: Number(newFood.protein) || 0,
+      carbs: Number(newFood.carbs) || 0,
+      fat: Number(newFood.fat) || 0,
+    };
+
+    setPlannedFoods([...plannedFoods, food]);
+    setNewFood({ name: '', calories: '', protein: '', carbs: '', fat: '' });
+    setShowAddFood(false);
+  };
+
+  // Remove planned food
+  const handleRemovePlannedFood = (id: string) => {
+    setPlannedFoods(plannedFoods.filter((f) => f.id !== id));
   };
 
   // Determine remaining meals on mount
@@ -94,6 +148,9 @@ export default function MealPlannerModal({
   const handleClose = () => {
     setSuggestions(null);
     setError(null);
+    setPlannedFoods([]);
+    setShowAddFood(false);
+    setNewFood({ name: '', calories: '', protein: '', carbs: '', fat: '' });
     onClose();
   };
 
@@ -354,18 +411,142 @@ export default function MealPlannerModal({
 
           {/* Initial State - No suggestions yet */}
           {!loading && !suggestions && !error && (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🍽️</div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                Let AI Help Plan Your Day
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Get personalized meal suggestions based on your remaining macros and eating patterns
-              </p>
-              <button onClick={handleGetSuggestions} className="btn-primary">
-                Get Suggestions ✨
-              </button>
-            </div>
+            <>
+              <div className="text-center py-8">
+                <div className="text-6xl mb-4">🍽️</div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Let AI Help Plan Your Day
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Get personalized meal suggestions based on your remaining macros
+                </p>
+              </div>
+
+              {/* Planned Foods Section */}
+              <div className="card">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Planned Foods (Optional)
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Add foods you're already planning to eat today
+                    </p>
+                  </div>
+                  {!showAddFood && (
+                    <button
+                      onClick={() => setShowAddFood(true)}
+                      className="btn-sm btn-secondary"
+                    >
+                      + Add Food
+                    </button>
+                  )}
+                </div>
+
+                {/* Add Food Form */}
+                {showAddFood && (
+                  <div className="mb-4 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div className="col-span-2">
+                        <input
+                          type="text"
+                          placeholder="Food name"
+                          value={newFood.name}
+                          onChange={(e) => setNewFood({ ...newFood, name: e.target.value })}
+                          className="input w-full"
+                        />
+                      </div>
+                      <input
+                        type="number"
+                        placeholder="Calories"
+                        value={newFood.calories}
+                        onChange={(e) => setNewFood({ ...newFood, calories: e.target.value })}
+                        className="input w-full"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Protein (g)"
+                        value={newFood.protein}
+                        onChange={(e) => setNewFood({ ...newFood, protein: e.target.value })}
+                        className="input w-full"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Carbs (g)"
+                        value={newFood.carbs}
+                        onChange={(e) => setNewFood({ ...newFood, carbs: e.target.value })}
+                        className="input w-full"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Fat (g)"
+                        value={newFood.fat}
+                        onChange={(e) => setNewFood({ ...newFood, fat: e.target.value })}
+                        className="input w-full"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={handleAddPlannedFood} className="btn-primary flex-1">
+                        Add
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowAddFood(false);
+                          setNewFood({ name: '', calories: '', protein: '', carbs: '', fat: '' });
+                        }}
+                        className="btn-secondary flex-1"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Planned Foods List */}
+                {plannedFoods.length > 0 && (
+                  <div className="space-y-2 mb-4">
+                    {plannedFoods.map((food) => (
+                      <div
+                        key={food.id}
+                        className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900 dark:text-white">
+                            {food.name}
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            {food.calories} cal • {food.protein}g protein • {food.carbs}g carbs • {food.fat}g fat
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleRemovePlannedFood(food.id)}
+                          className="text-red-600 hover:text-red-700 dark:text-red-400 p-2"
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                    <div className="text-sm text-gray-600 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-600">
+                      Total: {plannedTotals.calories} cal • {plannedTotals.protein}g protein • {plannedTotals.carbs}g carbs • {plannedTotals.fat}g fat
+                    </div>
+                  </div>
+                )}
+
+                {plannedFoods.length === 0 && !showAddFood && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                    No planned foods yet. Skip this or add foods you know you'll eat today.
+                  </p>
+                )}
+              </div>
+
+              <div className="text-center">
+                <button onClick={handleGetSuggestions} className="btn-primary">
+                  Get AI Suggestions ✨
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>
