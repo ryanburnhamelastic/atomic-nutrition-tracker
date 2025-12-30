@@ -38,33 +38,88 @@ export default function BarcodeScannerSection({ date, mealType, onSuccess }: Bar
       setScannerState('scanning');
       setErrorMessage('');
 
+      // Check for HTTPS (required for camera access)
+      if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+        setErrorMessage('Camera requires HTTPS connection. Please use a secure connection.');
+        setScannerState('error');
+        return;
+      }
+
+      // Check for camera support
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setErrorMessage('Camera not supported on this browser. Please try Chrome or Safari.');
+        setScannerState('error');
+        return;
+      }
+
       // Initialize scanner
       const scanner = new Html5Qrcode(scannerElementId);
       scannerRef.current = scanner;
 
-      // Start scanning with optimized config
-      await scanner.start(
-        { facingMode: 'environment' }, // Back camera
-        {
-          fps: 10, // 10 FPS for balance
-          qrbox: { width: 250, height: 150 }, // Optimized for barcodes
-        },
-        async (decodedText: string, decodedResult: any) => {
-          // Scan success - stop scanner and lookup
-          await handleScanSuccess({ decodedText, format: decodedResult.result.format.formatName });
-        },
-        (_errorMessage: string) => {
-          // Scan error (no barcode detected) - ignore these
+      // Try to start with back camera, fallback to any camera
+      let cameraStarted = false;
+
+      try {
+        // Try back camera first
+        await scanner.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 150 },
+          },
+          async (decodedText: string, decodedResult: any) => {
+            await handleScanSuccess({ decodedText, format: decodedResult.result.format.formatName });
+          },
+          (_errorMessage: string) => {
+            // Scan error (no barcode detected) - ignore these
+          }
+        );
+        cameraStarted = true;
+      } catch (backCameraError) {
+        console.warn('Back camera failed, trying any available camera:', backCameraError);
+
+        // Fallback: try any available camera
+        try {
+          await scanner.start(
+            { facingMode: { ideal: 'environment' } },
+            {
+              fps: 10,
+              qrbox: { width: 250, height: 150 },
+            },
+            async (decodedText: string, decodedResult: any) => {
+              await handleScanSuccess({ decodedText, format: decodedResult.result.format.formatName });
+            },
+            (_errorMessage: string) => {
+              // Scan error (no barcode detected) - ignore these
+            }
+          );
+          cameraStarted = true;
+        } catch (fallbackError) {
+          // Re-throw to be caught by outer catch
+          throw fallbackError;
         }
-      );
+      }
+
+      if (!cameraStarted) {
+        throw new Error('Failed to start camera');
+      }
     } catch (error: any) {
       console.error('Scanner start error:', error);
+      console.error('Error name:', error?.name);
+      console.error('Error message:', error?.message);
+
       if (error?.name === 'NotAllowedError' || error?.message?.includes('permission')) {
-        setErrorMessage('Camera access denied. Please check your browser permissions.');
-      } else if (error?.name === 'NotFoundError') {
+        setErrorMessage('Camera access denied. Please check your browser permissions and try again.');
+      } else if (error?.name === 'NotFoundError' || error?.message?.includes('not find')) {
         setErrorMessage('No camera found on this device.');
+      } else if (error?.name === 'NotReadableError' || error?.message?.includes('in use')) {
+        setErrorMessage('Camera is already in use by another app. Please close other apps and try again.');
+      } else if (error?.name === 'OverconstrainedError') {
+        setErrorMessage('Camera constraints not supported. Try using the front camera instead.');
+      } else if (error?.message?.includes('secure')) {
+        setErrorMessage('Camera requires HTTPS. Please ensure you are using a secure connection.');
       } else {
-        setErrorMessage('Failed to start camera. Please try again.');
+        setErrorMessage(`Camera error: ${error?.message || 'Unknown error'}. Please try again.`);
       }
       setScannerState('error');
     }
