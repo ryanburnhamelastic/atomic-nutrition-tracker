@@ -25,15 +25,15 @@ export default function FoodEntryCard({ entry, onEdit, onDelete, onToggleComplet
         {onToggleComplete && (
           <button
             onClick={() => onToggleComplete(entry.id, !isCompleted)}
-            className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+            className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
               isCompleted
                 ? 'bg-green-500 border-green-500 dark:bg-green-600 dark:border-green-600'
-                : 'border-gray-300 dark:border-gray-600 hover:border-green-400 dark:hover:border-green-500'
+                : 'bg-white dark:bg-slate-700 border-gray-400 dark:border-gray-500 hover:border-green-400 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20'
             }`}
             aria-label={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
           >
             {isCompleted && (
-              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
             )}
