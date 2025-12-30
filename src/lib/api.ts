@@ -20,6 +20,7 @@ import {
   CreateWeightEntryInput,
   AnalyticsData,
   FavoriteFood,
+  MealType,
   UserStats,
   UpdateStatsResponse,
   UserProgram,

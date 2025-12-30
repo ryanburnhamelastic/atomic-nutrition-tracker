@@ -40,13 +40,11 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
   const [inputMode, setInputMode] = useState<'servings' | 'grams'>('servings');
   const [adding, setAdding] = useState(false);
   const [recentFoods, setRecentFoods] = useState<SearchResult[]>([]);
-  const [loadingRecent, setLoadingRecent] = useState(true);
   const [favoriting, setFavoriting] = useState<string | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
   // Load recent foods when component mounts or meal type changes
   const loadRecentFoods = useCallback(async () => {
-    setLoadingRecent(true);
     const response = await recentFoodsApi.list(mealType, 10);
     if (response.data) {
       setRecentFoods(
@@ -68,7 +66,6 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
         }))
       );
     }
-    setLoadingRecent(false);
   }, [mealType]);
 
   // Load favorites on mount
