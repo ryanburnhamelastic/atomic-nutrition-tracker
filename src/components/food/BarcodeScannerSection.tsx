@@ -56,13 +56,42 @@ export default function BarcodeScannerSection({ date, mealType, onSuccess }: Bar
       const scanner = new Html5Qrcode(scannerElementId);
       scannerRef.current = scanner;
 
-      // Try to start with back camera, fallback to any camera
-      let cameraStarted = false;
-
+      // Get available cameras
+      let cameras;
       try {
-        // Try back camera first
+        cameras = await Html5Qrcode.getCameras();
+        console.log('Available cameras:', cameras);
+      } catch (cameraListError) {
+        console.error('Failed to get cameras:', cameraListError);
+        setErrorMessage('Failed to access camera. Please ensure camera permissions are granted.');
+        setScannerState('error');
+        return;
+      }
+
+      if (!cameras || cameras.length === 0) {
+        setErrorMessage('No cameras found on this device.');
+        setScannerState('error');
+        return;
+      }
+
+      // Find back camera (environment facing) or use first available
+      let cameraId = cameras[0].id;
+      const backCamera = cameras.find(camera =>
+        camera.label.toLowerCase().includes('back') ||
+        camera.label.toLowerCase().includes('rear') ||
+        camera.label.toLowerCase().includes('environment')
+      );
+      if (backCamera) {
+        cameraId = backCamera.id;
+        console.log('Using back camera:', backCamera.label);
+      } else {
+        console.log('Using first available camera:', cameras[0].label);
+      }
+
+      // Start scanning with specific camera ID
+      try {
         await scanner.start(
-          { facingMode: 'environment' },
+          cameraId,
           {
             fps: 10,
             qrbox: { width: 250, height: 150 },
@@ -74,34 +103,10 @@ export default function BarcodeScannerSection({ date, mealType, onSuccess }: Bar
             // Scan error (no barcode detected) - ignore these
           }
         );
-        cameraStarted = true;
-      } catch (backCameraError) {
-        console.warn('Back camera failed, trying any available camera:', backCameraError);
-
-        // Fallback: try any available camera
-        try {
-          await scanner.start(
-            { facingMode: { ideal: 'environment' } },
-            {
-              fps: 10,
-              qrbox: { width: 250, height: 150 },
-            },
-            async (decodedText: string, decodedResult: any) => {
-              await handleScanSuccess({ decodedText, format: decodedResult.result.format.formatName });
-            },
-            (_errorMessage: string) => {
-              // Scan error (no barcode detected) - ignore these
-            }
-          );
-          cameraStarted = true;
-        } catch (fallbackError) {
-          // Re-throw to be caught by outer catch
-          throw fallbackError;
-        }
-      }
-
-      if (!cameraStarted) {
-        throw new Error('Failed to start camera');
+        console.log('Scanner started successfully');
+      } catch (startError) {
+        console.error('Scanner start error:', startError);
+        throw startError;
       }
     } catch (error: any) {
       console.error('Scanner start error:', error);
