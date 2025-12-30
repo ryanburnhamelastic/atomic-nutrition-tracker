@@ -27,12 +27,19 @@ Choose from 8 program templates to match your goals:
 - **Trend Weight (EWMA)** - Exponentially weighted moving average for accurate weight trends
 - **Program Progress Tracking** - Visual progress bars, days remaining, and weight change
 - **Program Completion** - Automatic end-of-program summaries with achievements
+- **Weekly Program Reviews** - AI analyzes compliance, weight progress, and recommends macro adjustments
+- **Meal Completion Locking** - Mark meals as complete to prevent accidental editing
+- **Auto-Calculate Macros** - When editing, changing gram amount automatically recalculates all macros
 - **Streaks & Achievements** - Gamification to keep you motivated
 - **Dark Mode** - Full dark mode support with theme persistence
 - **PWA Support** - Install as a mobile app with offline capabilities
 
-### AI Integration (Gemini)
+### AI Integration (Gemini 2.0 Flash)
 - **AI Goal Generation** - Personalized macro targets based on your age, sex, height, weight, activity level, and goal
+- **AI Meal Planner** ✨ - Get personalized meal suggestions based on remaining macros for the day
+- **Macro-Aware Food Parsing** - AI suggests appropriate serving sizes to help you hit your targets
+- **AI Food Entry** - Parse foods from text descriptions or photos (text: "2 scrambled eggs", photo: snap a pic)
+- **Weekly Program Reviews** - AI analyzes your progress and suggests macro adjustments
 - **Smart Recommendations** - Get intelligent nutrition advice tailored to your program
 
 ## Tech Stack
@@ -56,43 +63,56 @@ Choose from 8 program templates to match your goals:
 
 ## Project Structure
 
+> **📖 For detailed architecture and development patterns, see [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)**
+
 ```
 atomic-nutrition-tracker/
 ├── src/
 │   ├── components/
-│   │   ├── common/           # Reusable UI components
-│   │   ├── food/             # Food logging components
-│   │   ├── programs/         # Program selection and display
-│   │   ├── weight/           # Weight tracking components
-│   │   └── achievements/     # Streaks and achievements
+│   │   ├── common/           # LoadingSpinner, ErrorMessage, MealPlannerFAB
+│   │   ├── food/             # FoodSearch, AIFoodInput, QuickAddForm, MealPlannerModal
+│   │   ├── nutrition/        # DailyProgress, MealSection, FoodEntryCard
+│   │   ├── programs/         # ProgramSelection, ProgramReviewModal, ActiveProgramCard
+│   │   ├── weight/           # WeightLogSection, WeightChart
+│   │   └── achievements/     # StreakCounter, AchievementBadges
 │   ├── contexts/
-│   │   ├── AuthContext.tsx   # User authentication state
-│   │   ├── NutritionContext.tsx  # Nutrition data state
-│   │   └── ThemeContext.tsx  # Dark mode theme
+│   │   ├── AuthContext.tsx   # User authentication with Clerk
+│   │   ├── NutritionContext.tsx  # Nutrition data and goals state
+│   │   └── ThemeContext.tsx  # Dark mode theme management
 │   ├── lib/
-│   │   ├── api.ts            # API client functions
-│   │   ├── units.ts          # Unit conversion utilities
-│   │   ├── programTemplates.ts  # Program templates and calculations
+│   │   ├── api.ts            # API client functions (all endpoints)
+│   │   ├── units.ts          # kg/lbs, cm/ft conversion
+│   │   ├── timeHelpers.ts    # Date utilities (timezone-safe)
+│   │   ├── programTemplates.ts  # Cut/bulk/maintain templates
 │   │   └── achievements.ts   # Achievement definitions
 │   ├── pages/
-│   │   ├── Dashboard.tsx     # Main overview page
-│   │   ├── LogFood.tsx       # Food logging interface
-│   │   ├── Foods.tsx         # Food management
-│   │   ├── Progress.tsx      # Weight and trend charts
-│   │   └── Settings.tsx      # User preferences
+│   │   ├── Dashboard.tsx     # Main overview page with program tracking
+│   │   ├── LogFood.tsx       # Food logging with AI parsing
+│   │   ├── Foods.tsx         # Food management and favorites
+│   │   ├── Progress.tsx      # Weight charts and analytics
+│   │   └── Settings.tsx      # User preferences and unit system
 │   └── types/
 │       └── index.ts          # TypeScript type definitions
 ├── netlify/
 │   └── functions/
-│       ├── db.ts             # Database initialization
-│       ├── foods.ts          # Food CRUD operations
-│       ├── food-entries.ts   # Food entry logging
+│       ├── lib/
+│       │   ├── gemini.ts     # Google Gemini AI client
+│       │   └── usda.ts       # USDA API integration
+│       ├── auth.ts           # JWT verification with Clerk
+│       ├── db.ts             # Database initialization and schema
+│       ├── users.ts          # User profile management
+│       ├── food-entries.ts   # Daily food logging CRUD
+│       ├── suggest-meals.ts  # AI meal planner endpoint
+│       ├── parse-food-text.ts # AI food parsing from text
+│       ├── analyze-food-image.ts # AI food parsing from photos
 │       ├── weight-entries.ts # Weight tracking
 │       ├── user-programs.ts  # Program management
-│       ├── usda-search.ts    # USDA API integration
-│       ├── generate-goals.ts # AI goal generation
-│       └── users.ts          # User management
-└── public/                   # Static assets
+│       ├── program-reviews.ts # Weekly AI program reviews
+│       ├── usda-search.ts    # USDA food database search
+│       └── generate-goals.ts # AI goal generation
+├── PROJECT_OVERVIEW.md       # 📖 Architecture guide for developers
+├── README.md                 # This file
+└── public/                   # Static assets and PWA manifest
 ```
 
 ## Getting Started
@@ -293,6 +313,60 @@ BMR × Activity Multiplier:
 - **Protein**: grams/kg bodyweight × 4 cal/g
 - **Fat**: grams/kg bodyweight × 9 cal/g
 - **Carbs**: Remaining calories ÷ 4 cal/g
+
+## Future Plans
+
+### High Priority
+- **Recipe Builder** - Create and save recipes with multiple ingredients and automatic macro calculation
+- **Meal Prep Planning** - Plan meals for multiple days ahead with grocery list generation
+- **Barcode Scanner** - Scan product barcodes to instantly log foods
+- **Restaurant Integration** - Database of restaurant menu items with nutrition info
+- **Export/Import Data** - CSV export for analytics, import from other apps (MyFitnessPal, etc.)
+
+### AI Enhancements
+- **Smart Macro Distribution** - AI suggests optimal macro timing throughout the day
+- **Photo-Based Portion Estimation** - AI estimates serving sizes from photos (e.g., "that's about 6oz")
+- **Meal Prep Suggestions** - AI recommends batch cooking recipes based on goals and preferences
+- **Nutrition Insights** - Weekly AI-generated insights about eating patterns and trends
+- **Voice Input** - "Hey, I just ate a chicken breast and rice" → auto-logged
+
+### Social & Community
+- **Share Meals** - Share your meals with friends or community
+- **Recipe Sharing** - Browse and save community recipes
+- **Challenge Tracking** - Join or create nutrition challenges
+- **Coach Integration** - Allow coaches to view client progress and make recommendations
+
+### Analytics & Visualization
+- **Advanced Charts** - Macro ratio trends, micronutrient tracking, meal timing analysis
+- **Weekly/Monthly Reports** - Comprehensive summaries with insights and achievements
+- **Correlation Analysis** - See how food choices correlate with weight, energy, workouts
+- **Predictive Modeling** - Predict weight trajectory based on current adherence
+
+### Mobile Improvements
+- **Native Mobile App** - iOS and Android apps with offline-first sync
+- **Widgets** - Home screen widgets for quick food logging and macro tracking
+- **Notifications** - Reminders to log meals, weekly review alerts, achievement notifications
+- **Apple Health / Google Fit Integration** - Sync weight, activity, and nutrition data
+
+### Quality of Life
+- **Quick Add Templates** - Save common meals as templates (e.g., "Typical Breakfast")
+- **Copy Previous Day** - Duplicate yesterday's meals with one tap
+- **Meal History Search** - Search all previously logged meals by name or date
+- **Smart Defaults** - Learn from patterns (e.g., "You usually eat eggs for breakfast")
+- **Undo/Redo** - Undo recent food deletions or edits
+
+### Program & Goal Enhancements
+- **Multi-Phase Programs** - Create programs with different phases (e.g., 4 weeks cut, 1 week maintain, repeat)
+- **Goal Templates** - Pre-built goal templates for common scenarios (wedding prep, competition prep, etc.)
+- **Macro Cycling** - Different macros for training vs. rest days
+- **Refeed Days** - Scheduled higher-carb days during cuts
+- **Diet Breaks** - Planned maintenance periods during long programs
+
+### Integrations
+- **Fitness Trackers** - Strava, Garmin, Whoop, Oura Ring for activity-adjusted calories
+- **Food Delivery** - Integration with meal delivery services
+- **Grocery Services** - One-click ordering from Instacart, Amazon Fresh based on meal plan
+- **Calendar Sync** - Block out meal prep time, sync review notifications
 
 ## Contributing
 
