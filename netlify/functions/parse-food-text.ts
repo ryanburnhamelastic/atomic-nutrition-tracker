@@ -1,7 +1,7 @@
 import { Handler, HandlerEvent } from '@netlify/functions';
 import { corsHeaders } from './db';
 import { authenticateRequest, unauthorizedResponse } from './auth';
-import { parseText } from './lib/gemini';
+import { parseText, MacroContext } from './lib/gemini';
 
 const handler: Handler = async (event: HandlerEvent) => {
   // Handle CORS preflight
@@ -28,7 +28,13 @@ const handler: Handler = async (event: HandlerEvent) => {
       }
 
       // Parse request body
-      let body: { text?: string };
+      let body: {
+        text?: string;
+        remainingCalories?: number;
+        remainingProtein?: number;
+        remainingCarbs?: number;
+        remainingFat?: number;
+      };
       try {
         body = JSON.parse(event.body || '{}');
       } catch {
@@ -39,7 +45,7 @@ const handler: Handler = async (event: HandlerEvent) => {
         };
       }
 
-      const { text } = body;
+      const { text, remainingCalories, remainingProtein, remainingCarbs, remainingFat } = body;
 
       if (!text || typeof text !== 'string') {
         return {
@@ -58,8 +64,24 @@ const handler: Handler = async (event: HandlerEvent) => {
         };
       }
 
-      // Parse with Gemini
-      const result = await parseText(text.trim());
+      // Build macro context if provided
+      let macroContext: MacroContext | undefined;
+      if (
+        typeof remainingCalories === 'number' &&
+        typeof remainingProtein === 'number' &&
+        typeof remainingCarbs === 'number' &&
+        typeof remainingFat === 'number'
+      ) {
+        macroContext = {
+          remainingCalories,
+          remainingProtein,
+          remainingCarbs,
+          remainingFat,
+        };
+      }
+
+      // Parse with Gemini (with macro context if available)
+      const result = await parseText(text.trim(), macroContext);
 
       if (!result) {
         return {

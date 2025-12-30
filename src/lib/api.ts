@@ -274,10 +274,21 @@ export const geminiApi = {
       method: 'POST',
       body: JSON.stringify({ image: imageBase64, mimeType }),
     }),
-  parseText: (text: string) =>
+  parseText: (
+    text: string,
+    macroContext?: {
+      remainingCalories: number;
+      remainingProtein: number;
+      remainingCarbs: number;
+      remainingFat: number;
+    }
+  ) =>
     apiRequest<GeminiParseResult>('/parse-food-text', {
       method: 'POST',
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({
+        text,
+        ...macroContext,
+      }),
     }),
   generateGoals: (input: GoalGenerationInput) =>
     apiRequest<GeneratedGoals>('/generate-goals', {

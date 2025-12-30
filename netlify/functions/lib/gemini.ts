@@ -26,6 +26,14 @@ export interface GeminiResponse {
   foods: GeminiFood[];
 }
 
+// Macro context for intelligent serving size suggestions
+export interface MacroContext {
+  remainingCalories: number;
+  remainingProtein: number;
+  remainingCarbs: number;
+  remainingFat: number;
+}
+
 // Prompt for analyzing food images
 const IMAGE_ANALYSIS_PROMPT = `Analyze this food image and identify all visible food items.
 For each food, estimate nutrition based on common USDA values:
@@ -130,15 +138,32 @@ export async function analyzeImage(imageBase64: string, mimeType: string): Promi
 
 /**
  * Parse natural language food description into structured food data
+ * Optionally uses macro context to suggest appropriate serving sizes
  */
-export async function parseText(text: string): Promise<GeminiResponse | null> {
+export async function parseText(text: string, macroContext?: MacroContext): Promise<GeminiResponse | null> {
   if (!process.env.GEMINI_API_KEY) {
     console.error('GEMINI_API_KEY not configured');
     return null;
   }
 
   try {
-    const prompt = TEXT_PARSING_PROMPT.replace('{text}', text);
+    let prompt = TEXT_PARSING_PROMPT.replace('{text}', text);
+
+    // Enhance prompt with macro context if provided
+    if (macroContext) {
+      const macroInfo = `\n\nCONTEXT - User's Remaining Macros:
+- Calories: ${macroContext.remainingCalories} kcal
+- Protein: ${macroContext.remainingProtein}g
+- Carbs: ${macroContext.remainingCarbs}g
+- Fat: ${macroContext.remainingFat}g
+
+IMPORTANT: Suggest serving sizes that help the user reach their remaining macro targets.
+For example, if they need high protein, suggest larger portions of protein-rich foods.
+If calories are low, suggest smaller portions or lower-calorie options.`;
+
+      prompt = prompt.replace('Guidelines:', macroInfo + '\n\nGuidelines:');
+    }
+
     const result = await model.generateContent(prompt);
     const response = result.response;
     const responseText = response.text();

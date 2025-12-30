@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { GeminiFood, MealType } from '../../types';
 import { geminiApi, foodEntriesApi } from '../../lib/api';
+import { useNutrition } from '../../contexts/NutritionContext';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 interface AIFoodInputProps {
@@ -12,6 +13,7 @@ interface AIFoodInputProps {
 type InputMode = 'photo' | 'text';
 
 export default function AIFoodInput({ date, mealType, onSuccess }: AIFoodInputProps) {
+  const { goals, dailySummary } = useNutrition();
   const [mode, setMode] = useState<InputMode>('text');
   const [textInput, setTextInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -74,7 +76,19 @@ export default function AIFoodInput({ date, mealType, onSuccess }: AIFoodInputPr
     setResults([]);
 
     try {
-      const response = await geminiApi.parseText(textInput.trim());
+      // Calculate remaining macros to help AI suggest appropriate serving sizes
+      let macroContext;
+      if (goals && dailySummary) {
+        const consumed = dailySummary.totals;
+        macroContext = {
+          remainingCalories: (goals.calorie_target || 2000) - consumed.calories,
+          remainingProtein: (goals.protein_target || 150) - consumed.protein,
+          remainingCarbs: (goals.carbs_target || 200) - consumed.carbs,
+          remainingFat: (goals.fat_target || 65) - consumed.fat,
+        };
+      }
+
+      const response = await geminiApi.parseText(textInput.trim(), macroContext);
 
       if (response.error) {
         setError(response.error);
