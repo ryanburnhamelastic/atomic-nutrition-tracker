@@ -176,7 +176,7 @@ const handler: Handler = async (event: HandlerEvent) => {
     );
 
     // 8. Call Gemini API
-    const apiKey = process.env.VITE_GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       console.error('[Meal Suggestions] Gemini API key not configured');
       return {

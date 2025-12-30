@@ -11,11 +11,11 @@ export default function MealPlannerFAB({ onClick }: MealPlannerFABProps) {
   return (
     <button
       onClick={onClick}
-      className="fixed bottom-20 right-6 z-40
+      className="fixed bottom-20 right-4 z-50
         bg-gradient-to-r from-purple-600 to-indigo-600
         text-white p-4 rounded-full shadow-lg
         hover:shadow-xl transition-all hover:scale-110 active:scale-95
-        md:bottom-24 md:right-8"
+        md:bottom-8 md:right-8"
       aria-label="AI Meal Planner"
     >
       <svg
