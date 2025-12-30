@@ -93,6 +93,15 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
       fatSecretApi.search(searchQuery, 15),
     ]);
 
+    // Debug logging
+    console.log('FatSecret API response:', fatSecretResponse);
+    if (fatSecretResponse.error) {
+      console.error('FatSecret API error:', fatSecretResponse.error);
+    }
+    if (fatSecretResponse.data) {
+      console.log('FatSecret foods count:', fatSecretResponse.data.foods?.length || 0);
+    }
+
     const combinedResults: SearchResult[] = [];
 
     // Add custom foods first (highest priority)
