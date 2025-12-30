@@ -122,6 +122,16 @@ export interface CustomFood {
   updated_at: string;
 }
 
+/**
+ * Recent food with frequency data
+ */
+export interface RecentFood extends Food {
+  frequency: number;
+  last_eaten: string;
+  food_id: string | null;
+  custom_food_id: string | null;
+}
+
 export interface CreateCustomFoodInput {
   name: string;
   brand?: string;

@@ -145,6 +145,11 @@ export async function initDb(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_food_entries_user_date ON food_entries(user_id, date)
   `;
 
+  // Add index for recent foods queries (meal-type filtered)
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_food_entries_user_meal_date ON food_entries(user_id, meal_type, date DESC)
+  `;
+
   // Weight entries (daily weight log)
   await sql`
     CREATE TABLE IF NOT EXISTS weight_entries (

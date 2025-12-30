@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CustomFood, Food, MealType } from '../../types';
-import { customFoodsApi, foodsApi, usdaApi, foodEntriesApi } from '../../lib/api';
+import { CustomFood, Food, MealType, RecentFood } from '../../types';
+import { customFoodsApi, foodsApi, usdaApi, fatSecretApi, recentFoodsApi, favoriteFoodsApi, foodEntriesApi } from '../../lib/api';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 // Source type for search results
-type FoodSource = 'custom' | 'local' | 'usda';
+type FoodSource = 'custom' | 'local' | 'usda' | 'fatsecret' | 'recent';
 
 // Unified food item for display
 interface SearchResult {
@@ -18,6 +18,10 @@ interface SearchResult {
   carbs: number;
   fat: number;
   source: FoodSource;
+  food_id?: string | null;
+  custom_food_id?: string | null;
+  frequency?: number;
+  last_eaten?: string;
 }
 
 interface FoodSearchSectionProps {
@@ -35,8 +39,47 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
   const [grams, setGrams] = useState('');
   const [inputMode, setInputMode] = useState<'servings' | 'grams'>('servings');
   const [adding, setAdding] = useState(false);
+  const [recentFoods, setRecentFoods] = useState<SearchResult[]>([]);
+  const [loadingRecent, setLoadingRecent] = useState(true);
+  const [favoriting, setFavoriting] = useState<string | null>(null);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
-  // Debounced search - searches custom foods, local database, and USDA
+  // Load recent foods when component mounts or meal type changes
+  const loadRecentFoods = useCallback(async () => {
+    setLoadingRecent(true);
+    const response = await recentFoodsApi.list(mealType, 10);
+    if (response.data) {
+      setRecentFoods(
+        response.data.map((f: RecentFood) => ({
+          id: f.food_id || f.custom_food_id || `recent_${f.name}`,
+          name: f.name,
+          brand: f.brand,
+          serving_size: f.serving_size,
+          serving_unit: f.serving_unit,
+          calories: f.calories,
+          protein: f.protein,
+          carbs: f.carbs,
+          fat: f.fat,
+          source: 'recent' as FoodSource,
+          food_id: f.food_id,
+          custom_food_id: f.custom_food_id,
+          frequency: f.frequency,
+          last_eaten: f.last_eaten,
+        }))
+      );
+    }
+    setLoadingRecent(false);
+  }, [mealType]);
+
+  // Load favorites on mount
+  const loadFavorites = useCallback(async () => {
+    const response = await favoriteFoodsApi.list();
+    if (response.data) {
+      setFavoriteIds(new Set(response.data.map(f => f.id)));
+    }
+  }, []);
+
+  // Debounced search - searches custom foods, local database, USDA, and FatSecret
   const searchFoods = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults([]);
@@ -45,11 +88,12 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
 
     setLoading(true);
 
-    // Search all sources in parallel
-    const [customResponse, localResponse, usdaResponse] = await Promise.all([
+    // Search all sources in parallel (now 4 sources)
+    const [customResponse, localResponse, usdaResponse, fatSecretResponse] = await Promise.all([
       customFoodsApi.list(searchQuery),
       foodsApi.search(searchQuery, 15),
       usdaApi.search(searchQuery, 15),
+      fatSecretApi.search(searchQuery, 15),
     ]);
 
     const combinedResults: SearchResult[] = [];
@@ -108,9 +152,37 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
       );
     }
 
+    // Add FatSecret foods
+    if (fatSecretResponse.data?.foods) {
+      combinedResults.push(
+        ...fatSecretResponse.data.foods.map((f: Food) => ({
+          id: f.id,
+          name: f.name,
+          brand: f.brand,
+          serving_size: f.serving_size,
+          serving_unit: f.serving_unit,
+          calories: f.calories,
+          protein: f.protein,
+          carbs: f.carbs,
+          fat: f.fat,
+          source: 'fatsecret' as FoodSource,
+        }))
+      );
+    }
+
     setResults(combinedResults);
     setLoading(false);
   }, []);
+
+  // Load recent foods when meal type changes
+  useEffect(() => {
+    loadRecentFoods();
+  }, [mealType, loadRecentFoods]);
+
+  // Load favorites on mount
+  useEffect(() => {
+    loadFavorites();
+  }, [loadFavorites]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -134,6 +206,37 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
     setInputMode('servings');
   };
 
+  const handleToggleFavorite = async (food: SearchResult, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    // Only allow favoriting from local database (not custom, USDA, FatSecret, or recent)
+    if (food.source !== 'local') {
+      return;
+    }
+
+    setFavoriting(food.id);
+
+    const isFavorited = favoriteIds.has(food.id);
+
+    if (isFavorited) {
+      const response = await favoriteFoodsApi.remove(food.id);
+      if (!response.error) {
+        setFavoriteIds(prev => {
+          const next = new Set(prev);
+          next.delete(food.id);
+          return next;
+        });
+      }
+    } else {
+      const response = await favoriteFoodsApi.add(food.id);
+      if (!response.error) {
+        setFavoriteIds(prev => new Set(prev).add(food.id));
+      }
+    }
+
+    setFavoriting(null);
+  };
+
   const handleAddFood = async () => {
     if (!selectedFood) return;
 
@@ -149,11 +252,15 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
     setAdding(true);
 
     // Determine which ID field to use based on source
-    const idField = selectedFood.source === 'custom'
-      ? { customFoodId: selectedFood.id }
-      : selectedFood.source === 'local'
-        ? { foodId: selectedFood.id }
-        : {}; // USDA foods don't have a local ID reference
+    const idField = selectedFood.custom_food_id
+      ? { customFoodId: selectedFood.custom_food_id }
+      : selectedFood.food_id
+        ? { foodId: selectedFood.food_id }
+        : selectedFood.source === 'custom'
+          ? { customFoodId: selectedFood.id }
+          : selectedFood.source === 'local'
+            ? { foodId: selectedFood.id }
+            : {}; // USDA/FatSecret foods don't have a local ID reference
 
     const response = await foodEntriesApi.create({
       date,
@@ -176,6 +283,8 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
     setInputMode('servings');
 
     if (!response.error) {
+      // Reload recent foods since we just added a food
+      loadRecentFoods();
       onSuccess();
     }
   };
@@ -365,55 +474,146 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
         <div className="flex justify-center py-4">
           <LoadingSpinner size="sm" />
         </div>
-      ) : results.length > 0 ? (
-        <div className="mt-3 divide-y divide-gray-100 dark:divide-gray-700">
-          {results.map((food) => (
-            <div
-              key={food.id}
-              className="flex items-center justify-between py-3"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-900 dark:text-white truncate">
-                    {food.name}
-                  </p>
-                  {food.source === 'custom' && (
-                    <span className="text-xs px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded flex-shrink-0">
-                      My Food
-                    </span>
-                  )}
-                  {food.source === 'usda' && (
-                    <span className="text-xs px-1.5 py-0.5 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded flex-shrink-0">
-                      USDA
-                    </span>
-                  )}
-                </div>
-                {food.brand && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                    {food.brand}
-                  </p>
-                )}
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {food.serving_size} {food.serving_unit} - {food.calories} cal
-                </p>
+      ) : (
+        <>
+          {/* Recent Foods - Show when no search query or at top of results */}
+          {!query.trim() && recentFoods.length > 0 && (
+            <div className="mt-3">
+              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                Recent for {mealType}
+              </h3>
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                {recentFoods.map((food) => (
+                  <FoodResultRow
+                    key={food.id}
+                    food={food}
+                    isFavorited={favoriteIds.has(food.id)}
+                    favoriting={favoriting === food.id}
+                    onSelect={handleSelectFood}
+                    onToggleFavorite={handleToggleFavorite}
+                  />
+                ))}
               </div>
-              <button
-                onClick={() => handleSelectFood(food)}
-                className="ml-3 p-2 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
-                aria-label="Select food"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </button>
             </div>
-          ))}
+          )}
+
+          {/* Search Results */}
+          {results.length > 0 && (
+            <div className={recentFoods.length > 0 && !query.trim() ? 'mt-6' : 'mt-3'}>
+              {query.trim() && recentFoods.length > 0 && (
+                <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                  Search Results
+                </h3>
+              )}
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                {results.map((food) => (
+                  <FoodResultRow
+                    key={food.id}
+                    food={food}
+                    isFavorited={favoriteIds.has(food.id)}
+                    favoriting={favoriting === food.id}
+                    onSelect={handleSelectFood}
+                    onToggleFavorite={handleToggleFavorite}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Empty states */}
+          {!loading && results.length === 0 && recentFoods.length === 0 && !query.trim() && (
+            <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
+              Start typing to search for foods
+            </p>
+          )}
+          {!loading && results.length === 0 && query.trim() && (
+            <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
+              No foods found. Try a different search.
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// Extract to separate component for reusability
+interface FoodResultRowProps {
+  food: SearchResult;
+  isFavorited: boolean;
+  favoriting: boolean;
+  onSelect: (food: SearchResult) => void;
+  onToggleFavorite: (food: SearchResult, e: React.MouseEvent) => void;
+}
+
+function FoodResultRow({ food, isFavorited, favoriting, onSelect, onToggleFavorite }: FoodResultRowProps) {
+  return (
+    <div className="flex items-center justify-between py-3">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="font-medium text-gray-900 dark:text-white truncate">
+            {food.name}
+          </p>
+          {food.source === 'custom' && (
+            <span className="text-xs px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded flex-shrink-0">
+              My Food
+            </span>
+          )}
+          {food.source === 'usda' && (
+            <span className="text-xs px-1.5 py-0.5 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded flex-shrink-0">
+              USDA
+            </span>
+          )}
+          {food.source === 'fatsecret' && (
+            <span className="text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded flex-shrink-0">
+              FatSecret
+            </span>
+          )}
+          {food.source === 'recent' && food.frequency && (
+            <span className="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 rounded flex-shrink-0">
+              {food.frequency}x recently
+            </span>
+          )}
         </div>
-      ) : query.trim() ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
-          No foods found. Try a different search.
+        {food.brand && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+            {food.brand}
+          </p>
+        )}
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {food.serving_size} {food.serving_unit} - {food.calories} cal
         </p>
-      ) : null}
+      </div>
+      <div className="flex items-center gap-2 ml-3">
+        {/* Favorite button - only for local database foods */}
+        {food.source === 'local' && (
+          <button
+            onClick={(e) => onToggleFavorite(food, e)}
+            disabled={favoriting}
+            className="p-2 text-gray-400 hover:text-amber-500 dark:hover:text-amber-400 disabled:opacity-50 transition-colors"
+            aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            <svg
+              className={`w-5 h-5 ${isFavorited ? 'fill-amber-500 text-amber-500' : 'fill-none'}`}
+              viewBox="0 0 20 20"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+          </button>
+        )}
+        {/* Select button */}
+        <button
+          onClick={() => onSelect(food)}
+          className="p-2 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
+          aria-label="Select food"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }

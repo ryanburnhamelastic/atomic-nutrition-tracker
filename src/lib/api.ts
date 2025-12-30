@@ -266,6 +266,40 @@ export const usdaApi = {
 };
 
 /**
+ * FatSecret Food Search Result
+ */
+export interface FatSecretSearchResult {
+  foods: Food[];
+  totalResults: number;
+}
+
+/**
+ * FatSecret Foods API (branded/restaurant foods)
+ */
+export const fatSecretApi = {
+  search: (query: string, limit = 20) =>
+    apiRequest<FatSecretSearchResult>(`/fatsecret-search?q=${encodeURIComponent(query)}&limit=${limit}`),
+};
+
+/**
+ * Recent Food Item (with frequency and recency data)
+ */
+export interface RecentFood extends Food {
+  frequency: number;
+  last_eaten: string;
+  food_id: string | null;
+  custom_food_id: string | null;
+}
+
+/**
+ * Recent Foods API (context-aware by meal type)
+ */
+export const recentFoodsApi = {
+  list: (mealType: MealType, limit = 10) =>
+    apiRequest<RecentFood[]>(`/recent-foods?mealType=${mealType}&limit=${limit}`),
+};
+
+/**
  * Gemini AI API (food analysis)
  */
 export const geminiApi = {
