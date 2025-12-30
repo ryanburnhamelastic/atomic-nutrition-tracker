@@ -180,7 +180,12 @@ export async function searchFatSecret(query: string, maxResults = 25): Promise<F
           if (retryResponse.ok) {
             const data = await retryResponse.json();
             console.log('FatSecret search response (retry):', JSON.stringify(data, null, 2));
-            return data.foods_search || data;
+            return {
+              foods: data.foods,
+              total_results: data.foods?.total_results || '0',
+              max_results: data.foods?.max_results || '0',
+              page_number: data.foods?.page_number || '0',
+            };
           }
         }
       }
@@ -189,8 +194,15 @@ export async function searchFatSecret(query: string, maxResults = 25): Promise<F
 
     const data = await response.json();
     console.log('FatSecret search response:', JSON.stringify(data, null, 2));
-    console.log('Returning:', data.foods_search ? 'foods_search property' : 'full data object');
-    return data.foods_search || data;
+
+    // FatSecret returns the data directly in 'foods' property, not 'foods_search'
+    // Return the data in the expected format for our FatSecretSearchResult interface
+    return {
+      foods: data.foods,
+      total_results: data.foods?.total_results || '0',
+      max_results: data.foods?.max_results || '0',
+      page_number: data.foods?.page_number || '0',
+    };
   } catch (error) {
     console.error('FatSecret API request failed:', error);
     return null;
