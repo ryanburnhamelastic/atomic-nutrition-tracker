@@ -140,6 +140,24 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
       );
     }
 
+    // Add FatSecret foods (prioritized over USDA for branded/restaurant foods)
+    if (fatSecretResponse.data?.foods) {
+      combinedResults.push(
+        ...fatSecretResponse.data.foods.map((f: Food) => ({
+          id: f.id,
+          name: f.name,
+          brand: f.brand,
+          serving_size: f.serving_size,
+          serving_unit: f.serving_unit,
+          calories: f.calories,
+          protein: f.protein,
+          carbs: f.carbs,
+          fat: f.fat,
+          source: 'fatsecret' as FoodSource,
+        }))
+      );
+    }
+
     // Add USDA foods
     if (usdaResponse.data?.foods) {
       combinedResults.push(
@@ -154,24 +172,6 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
           carbs: f.carbs,
           fat: f.fat,
           source: 'usda' as FoodSource,
-        }))
-      );
-    }
-
-    // Add FatSecret foods
-    if (fatSecretResponse.data?.foods) {
-      combinedResults.push(
-        ...fatSecretResponse.data.foods.map((f: Food) => ({
-          id: f.id,
-          name: f.name,
-          brand: f.brand,
-          serving_size: f.serving_size,
-          serving_unit: f.serving_unit,
-          calories: f.calories,
-          protein: f.protein,
-          carbs: f.carbs,
-          fat: f.fat,
-          source: 'fatsecret' as FoodSource,
         }))
       );
     }
