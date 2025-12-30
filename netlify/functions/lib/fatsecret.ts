@@ -162,6 +162,9 @@ export async function searchFatSecret(query: string, maxResults = 25): Promise<F
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('FatSecret API error:', response.status, response.statusText, errorText);
+
       // If token expired, try to refresh and retry once
       if (response.status === 401) {
         cachedToken = null; // Invalidate cache
@@ -176,15 +179,17 @@ export async function searchFatSecret(query: string, maxResults = 25): Promise<F
           });
           if (retryResponse.ok) {
             const data = await retryResponse.json();
+            console.log('FatSecret search response (retry):', JSON.stringify(data, null, 2));
             return data.foods_search || data;
           }
         }
       }
-      console.error('FatSecret API error:', response.status, response.statusText);
       return null;
     }
 
     const data = await response.json();
+    console.log('FatSecret search response:', JSON.stringify(data, null, 2));
+    console.log('Returning:', data.foods_search ? 'foods_search property' : 'full data object');
     return data.foods_search || data;
   } catch (error) {
     console.error('FatSecret API request failed:', error);
