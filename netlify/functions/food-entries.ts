@@ -195,7 +195,7 @@ const handler: Handler = async (event: HandlerEvent) => {
     // PUT - Update a food entry
     if (event.httpMethod === 'PUT' && entryId) {
       const body = JSON.parse(event.body || '{}');
-      const { servings, mealType } = body;
+      const { servings, mealType, name, servingSize, servingUnit, calories, protein, carbs, fat } = body;
 
       // Verify entry belongs to user
       const existing = await sql`
@@ -215,6 +215,13 @@ const handler: Handler = async (event: HandlerEvent) => {
         SET
           servings = COALESCE(${servings ?? null}, servings),
           meal_type = COALESCE(${mealType ?? null}, meal_type),
+          name = COALESCE(${name ?? null}, name),
+          serving_size = COALESCE(${servingSize ?? null}, serving_size),
+          serving_unit = COALESCE(${servingUnit ?? null}, serving_unit),
+          calories = COALESCE(${calories ?? null}, calories),
+          protein = COALESCE(${protein ?? null}, protein),
+          carbs = COALESCE(${carbs ?? null}, carbs),
+          fat = COALESCE(${fat ?? null}, fat),
           updated_at = NOW()
         WHERE id = ${entryId} AND user_id = ${userId}
         RETURNING id, user_id, food_id, custom_food_id, date, meal_type, servings,
