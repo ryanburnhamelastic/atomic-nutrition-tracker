@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useNutrition } from '../contexts/NutritionContext';
+import BarcodeScannerSection from '../components/food/BarcodeScannerSection';
 import QuickAddFavorites from '../components/food/QuickAddFavorites';
 import AIFoodInput from '../components/food/AIFoodInput';
 import FoodSearchSection from '../components/food/FoodSearchSection';
@@ -97,6 +98,15 @@ export default function LogFood() {
           ))}
         </div>
       </div>
+
+      {/* Barcode Scanner (only show when not editing) */}
+      {!editEntry && (
+        <BarcodeScannerSection
+          date={selectedDate}
+          mealType={selectedMeal}
+          onSuccess={handleSuccess}
+        />
+      )}
 
       {/* Quick Add Favorites (only show when not editing) */}
       {!editEntry && (

@@ -132,6 +132,14 @@ export interface RecentFood extends Food {
   custom_food_id: string | null;
 }
 
+/**
+ * Barcode scan result from html5-qrcode
+ */
+export interface BarcodeScanResult {
+  decodedText: string;
+  format: string;
+}
+
 export interface CreateCustomFoodInput {
   name: string;
   brand?: string;

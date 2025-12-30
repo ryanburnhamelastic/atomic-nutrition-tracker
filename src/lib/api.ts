@@ -301,6 +301,21 @@ export const recentFoodsApi = {
 };
 
 /**
+ * Barcode Lookup Result
+ */
+export interface BarcodeLookupResult {
+  food: Food;
+}
+
+/**
+ * Barcode Lookup API (FatSecret barcode database)
+ */
+export const barcodeApi = {
+  lookup: (barcode: string) =>
+    apiRequest<BarcodeLookupResult>(`/barcode-lookup?barcode=${encodeURIComponent(barcode)}`),
+};
+
+/**
  * Gemini AI API (food analysis)
  */
 export const geminiApi = {

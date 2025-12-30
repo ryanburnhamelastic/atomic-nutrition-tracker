@@ -262,3 +262,139 @@ export function transformFatSecretFoods(searchResult: FatSecretSearchResult): an
 
   return foods.map(transformFatSecretFood);
 }
+
+/**
+ * Validate and normalize barcode format
+ * FatSecret accepts: UPC-A (12 digits), EAN-13 (13 digits), EAN-8 (8 digits)
+ */
+export function validateBarcode(barcode: string): { valid: boolean; normalized: string | null } {
+  // Remove whitespace and non-digit characters
+  const cleaned = barcode.replace(/\D/g, '');
+
+  // Check valid lengths
+  if ([8, 12, 13].includes(cleaned.length)) {
+    return { valid: true, normalized: cleaned };
+  }
+
+  return { valid: false, normalized: null };
+}
+
+/**
+ * Barcode lookup in FatSecret database
+ * Returns food_id for a given barcode
+ * Supports UPC-A, EAN-13, EAN-8, GTIN-13
+ */
+export async function barcodeLookupFatSecret(barcode: string): Promise<string | null> {
+  if (!checkRateLimit()) {
+    return null;
+  }
+
+  const token = await getAccessToken();
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const params = new URLSearchParams({
+      method: 'food.find_id_for_barcode',
+      barcode: barcode,
+      format: 'json',
+    });
+
+    const response = await fetch(`${FATSECRET_API_BASE}?${params.toString()}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      // Handle 401 token expiration
+      if (response.status === 401) {
+        cachedToken = null;
+        const newToken = await getAccessToken();
+        if (newToken) {
+          const retryResponse = await fetch(`${FATSECRET_API_BASE}?${params.toString()}`, {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${newToken}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          if (retryResponse.ok) {
+            const data = await retryResponse.json();
+            return data.food_id?.value || null;
+          }
+        }
+      }
+      console.error('FatSecret barcode lookup error:', response.status, response.statusText);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.food_id?.value || null;
+  } catch (error) {
+    console.error('FatSecret barcode lookup failed:', error);
+    return null;
+  }
+}
+
+/**
+ * Get detailed food information by FatSecret food_id
+ */
+export async function getFoodByIdFatSecret(foodId: string): Promise<FatSecretFood | null> {
+  if (!checkRateLimit()) {
+    return null;
+  }
+
+  const token = await getAccessToken();
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const params = new URLSearchParams({
+      method: 'food.get.v2',
+      food_id: foodId,
+      format: 'json',
+    });
+
+    const response = await fetch(`${FATSECRET_API_BASE}?${params.toString()}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      // Handle 401 token expiration
+      if (response.status === 401) {
+        cachedToken = null;
+        const newToken = await getAccessToken();
+        if (newToken) {
+          const retryResponse = await fetch(`${FATSECRET_API_BASE}?${params.toString()}`, {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${newToken}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          if (retryResponse.ok) {
+            const data = await retryResponse.json();
+            return data.food || null;
+          }
+        }
+      }
+      console.error('FatSecret food.get error:', response.status, response.statusText);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.food || null;
+  } catch (error) {
+    console.error('FatSecret food.get failed:', error);
+    return null;
+  }
+}
