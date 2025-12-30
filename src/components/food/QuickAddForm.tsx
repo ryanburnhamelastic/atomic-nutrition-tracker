@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FoodEntry, MealType, CreateFoodEntryInput, UpdateFoodEntryInput } from '../../types';
 import { foodEntriesApi } from '../../lib/api';
 import LoadingSpinner from '../common/LoadingSpinner';
@@ -14,11 +14,14 @@ interface QuickAddFormProps {
 export default function QuickAddForm({ date, mealType, editEntry, onSuccess, onCancel }: QuickAddFormProps) {
   const isEditing = Boolean(editEntry);
 
+  // Calculate initial grams if editing (serving_size * servings)
+  const initialGrams = editEntry ? String(editEntry.serving_size * editEntry.servings) : '';
+
   const [name, setName] = useState(editEntry?.name || '');
   const [servingSize, setServingSize] = useState(String(editEntry?.serving_size || '100'));
   const [servingUnit, setServingUnit] = useState(editEntry?.serving_unit || 'g');
   const [servings, setServings] = useState(String(editEntry?.servings || '1'));
-  const [grams, setGrams] = useState('');
+  const [grams, setGrams] = useState(initialGrams);
   const [inputMode, setInputMode] = useState<'servings' | 'grams'>('servings');
   const [calories, setCalories] = useState(String(editEntry?.calories || ''));
   const [protein, setProtein] = useState(String(editEntry?.protein || '0'));
@@ -26,6 +29,32 @@ export default function QuickAddForm({ date, mealType, editEntry, onSuccess, onC
   const [fat, setFat] = useState(String(editEntry?.fat || '0'));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Store original values for ratio calculations
+  const originalValuesRef = useRef({
+    grams: Number(initialGrams) || 100,
+    calories: Number(editEntry?.calories) * Number(editEntry?.servings || 1) || 0,
+    protein: Number(editEntry?.protein) * Number(editEntry?.servings || 1) || 0,
+    carbs: Number(editEntry?.carbs) * Number(editEntry?.servings || 1) || 0,
+    fat: Number(editEntry?.fat) * Number(editEntry?.servings || 1) || 0,
+  });
+
+  // Auto-calculate macros when grams change (only in grams mode)
+  useEffect(() => {
+    if (inputMode === 'grams' && grams && Number(grams) > 0 && isEditing) {
+      const newGrams = Number(grams);
+      const originalGrams = originalValuesRef.current.grams;
+
+      if (originalGrams > 0) {
+        const ratio = newGrams / originalGrams;
+
+        setCalories(String(Math.round(originalValuesRef.current.calories * ratio)));
+        setProtein(String((originalValuesRef.current.protein * ratio).toFixed(1)));
+        setCarbs(String((originalValuesRef.current.carbs * ratio).toFixed(1)));
+        setFat(String((originalValuesRef.current.fat * ratio).toFixed(1)));
+      }
+    }
+  }, [grams, inputMode, isEditing]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
