@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, useEffect, ReactNode 
 import { UserGoals, DailySummary } from '../types';
 import { goalsApi, dailySummaryApi } from '../lib/api';
 import { useAuth } from './AuthContext';
+import { getTodayDate } from '../lib/timeHelpers';
 
 interface NutritionContextType {
   // Selected date for viewing
@@ -20,12 +21,6 @@ interface NutritionContextType {
 }
 
 const NutritionContext = createContext<NutritionContextType | undefined>(undefined);
-
-// Helper to get today's date in YYYY-MM-DD format
-function getTodayDate(): string {
-  const today = new Date();
-  return today.toISOString().split('T')[0];
-}
 
 export function NutritionProvider({ children }: { children: ReactNode }) {
   const { isSignedIn, isLoaded } = useAuth();

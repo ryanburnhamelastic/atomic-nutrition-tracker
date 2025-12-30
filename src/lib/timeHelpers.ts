@@ -1,6 +1,18 @@
 import { MealType } from '../types';
 
 /**
+ * Get today's date in YYYY-MM-DD format using LOCAL timezone
+ * (not UTC, to avoid timezone mismatch issues)
+ */
+export function getTodayDate(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = (today.getMonth() + 1).toString().padStart(2, '0');
+  const day = today.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Get current time in HH:MM format (24-hour)
  */
 export function getCurrentTime(): string {

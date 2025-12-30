@@ -15,6 +15,7 @@ import ProgramReviewBanner from '../components/programs/ProgramReviewBanner';
 import ProgramReviewModal from '../components/programs/ProgramReviewModal';
 import MealPlannerFAB from '../components/common/MealPlannerFAB';
 import MealPlannerModal from '../components/food/MealPlannerModal';
+import { getTodayDate } from '../lib/timeHelpers';
 import { FoodEntry, MealType, UserStats, UserProgram, ProgramReview } from '../types';
 
 // Helper to format date for display
@@ -158,10 +159,10 @@ export default function Dashboard() {
   // Navigate dates
   const goToPreviousDay = () => setSelectedDate(addDays(selectedDate, -1));
   const goToNextDay = () => setSelectedDate(addDays(selectedDate, 1));
-  const goToToday = () => setSelectedDate(new Date().toISOString().split('T')[0]);
+  const goToToday = () => setSelectedDate(getTodayDate());
 
   // Check if viewing today
-  const isToday = selectedDate === new Date().toISOString().split('T')[0];
+  const isToday = selectedDate === getTodayDate();
 
   // Program handlers
   const handleProgramSuccess = () => {
