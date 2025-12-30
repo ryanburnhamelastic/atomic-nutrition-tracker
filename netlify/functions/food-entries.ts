@@ -53,7 +53,7 @@ const handler: Handler = async (event: HandlerEvent) => {
       const entries = await sql`
         SELECT id, user_id, food_id, custom_food_id, date, meal_type, servings,
                name, serving_size, serving_unit, calories, protein, carbs, fat,
-               created_at, updated_at
+               completed, created_at, updated_at
         FROM food_entries
         WHERE user_id = ${userId} AND date = ${date}
         ORDER BY created_at ASC
@@ -182,7 +182,7 @@ const handler: Handler = async (event: HandlerEvent) => {
         )
         RETURNING id, user_id, food_id, custom_food_id, date, meal_type, servings,
                   name, serving_size, serving_unit, calories, protein, carbs, fat,
-                  created_at, updated_at
+                  completed, created_at, updated_at
       `;
 
       return {
@@ -219,7 +219,49 @@ const handler: Handler = async (event: HandlerEvent) => {
         WHERE id = ${entryId} AND user_id = ${userId}
         RETURNING id, user_id, food_id, custom_food_id, date, meal_type, servings,
                   name, serving_size, serving_unit, calories, protein, carbs, fat,
-                  created_at, updated_at
+                  completed, created_at, updated_at
+      `;
+
+      return {
+        statusCode: 200,
+        headers: corsHeaders,
+        body: JSON.stringify(entries[0]),
+      };
+    }
+
+    // PATCH - Toggle completion status
+    if (event.httpMethod === 'PATCH' && entryId) {
+      const body = JSON.parse(event.body || '{}');
+      const { completed } = body;
+
+      if (typeof completed !== 'boolean') {
+        return {
+          statusCode: 400,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: 'completed field must be a boolean' }),
+        };
+      }
+
+      // Verify entry belongs to user
+      const existing = await sql`
+        SELECT id FROM food_entries WHERE id = ${entryId} AND user_id = ${userId}
+      `;
+
+      if (existing.length === 0) {
+        return {
+          statusCode: 404,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: 'Food entry not found' }),
+        };
+      }
+
+      const entries = await sql`
+        UPDATE food_entries
+        SET completed = ${completed}, updated_at = NOW()
+        WHERE id = ${entryId} AND user_id = ${userId}
+        RETURNING id, user_id, food_id, custom_food_id, date, meal_type, servings,
+                  name, serving_size, serving_unit, calories, protein, carbs, fat,
+                  completed, created_at, updated_at
       `;
 
       return {

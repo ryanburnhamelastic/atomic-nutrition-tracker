@@ -177,6 +177,11 @@ export const foodEntriesApi = {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
+  toggleComplete: (id: string, completed: boolean) =>
+    apiRequest<FoodEntry>(`/food-entries/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ completed }),
+    }),
   delete: (id: string) =>
     apiRequest<void>(`/food-entries/${id}`, {
       method: 'DELETE',

@@ -156,6 +156,14 @@ export default function Dashboard() {
     }
   }, [refreshSummary]);
 
+  // Handle toggle completion
+  const handleToggleComplete = useCallback(async (entryId: string, completed: boolean) => {
+    const response = await foodEntriesApi.toggleComplete(entryId, completed);
+    if (!response.error) {
+      refreshSummary();
+    }
+  }, [refreshSummary]);
+
   // Navigate dates
   const goToPreviousDay = () => setSelectedDate(addDays(selectedDate, -1));
   const goToNextDay = () => setSelectedDate(addDays(selectedDate, 1));
@@ -305,6 +313,7 @@ export default function Dashboard() {
               summary={summary.byMeal[mealType]}
               onEditEntry={handleEditEntry}
               onDeleteEntry={handleDeleteEntry}
+              onToggleComplete={handleToggleComplete}
             />
           ))}
         </>

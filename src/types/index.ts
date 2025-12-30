@@ -156,6 +156,7 @@ export interface FoodEntry {
   protein: number;
   carbs: number;
   fat: number;
+  completed: boolean;
   created_at: string;
   updated_at: string;
 }

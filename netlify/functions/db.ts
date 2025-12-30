@@ -135,6 +135,12 @@ export async function initDb(): Promise<void> {
     )
   `;
 
+  // Add completed column to food_entries if it doesn't exist
+  await sql`
+    ALTER TABLE food_entries
+    ADD COLUMN IF NOT EXISTS completed BOOLEAN DEFAULT false
+  `;
+
   await sql`
     CREATE INDEX IF NOT EXISTS idx_food_entries_user_date ON food_entries(user_id, date)
   `;

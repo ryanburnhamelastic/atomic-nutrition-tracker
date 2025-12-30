@@ -7,6 +7,7 @@ interface MealSectionProps {
   summary: MealSummary;
   onEditEntry?: (entry: FoodEntry) => void;
   onDeleteEntry?: (id: string) => void;
+  onToggleComplete?: (id: string, completed: boolean) => void;
 }
 
 const mealLabels: Record<MealType, string> = {
@@ -23,7 +24,7 @@ const mealIcons: Record<MealType, string> = {
   snack: '🍿',
 };
 
-export default function MealSection({ mealType, summary, onEditEntry, onDeleteEntry }: MealSectionProps) {
+export default function MealSection({ mealType, summary, onEditEntry, onDeleteEntry, onToggleComplete }: MealSectionProps) {
   const hasEntries = summary.entries.length > 0;
 
   return (
@@ -48,6 +49,7 @@ export default function MealSection({ mealType, summary, onEditEntry, onDeleteEn
               entry={entry}
               onEdit={onEditEntry}
               onDelete={onDeleteEntry}
+              onToggleComplete={onToggleComplete}
             />
           ))}
         </div>
