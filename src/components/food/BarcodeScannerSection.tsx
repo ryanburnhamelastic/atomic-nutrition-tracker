@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { BrowserMultiFormatReader } from '@zxing/library';
 import { Food, MealType } from '../../types';
 import { barcodeApi, foodEntriesApi } from '../../lib/api';
 import LoadingSpinner from '../common/LoadingSpinner';
@@ -35,14 +35,27 @@ export default function BarcodeScannerSection({ date, mealType, onSuccess }: Bar
     setErrorMessage('');
 
     try {
-      // Scan barcode from image using html5-qrcode
-      const html5QrCode = new Html5Qrcode('reader');
-      const result = await html5QrCode.scanFile(file, false);
+      // Create an image element from the file
+      const imageUrl = URL.createObjectURL(file);
+      const img = new Image();
 
-      console.log('Barcode detected:', result);
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = imageUrl;
+      });
+
+      // Scan barcode from image using ZXing
+      const codeReader = new BrowserMultiFormatReader();
+      const result = await codeReader.decodeFromImageElement(img);
+
+      console.log('Barcode detected:', result.getText());
+
+      // Clean up
+      URL.revokeObjectURL(imageUrl);
 
       // Lookup barcode in FatSecret database
-      const response = await barcodeApi.lookup(result);
+      const response = await barcodeApi.lookup(result.getText());
 
       if (response.error) {
         setErrorMessage(
@@ -279,8 +292,7 @@ export default function BarcodeScannerSection({ date, mealType, onSuccess }: Bar
         </div>
       )}
 
-      {/* Hidden elements for barcode scanning */}
-      <div id="reader" className="hidden"></div>
+      {/* Hidden file input for camera */}
       <input
         ref={fileInputRef}
         type="file"
