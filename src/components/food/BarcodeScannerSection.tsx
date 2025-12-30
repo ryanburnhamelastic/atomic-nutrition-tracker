@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { Food, MealType, BarcodeScanResult } from '../../types';
+import { Food, MealType } from '../../types';
 import { barcodeApi, foodEntriesApi } from '../../lib/api';
 import LoadingSpinner from '../common/LoadingSpinner';
 
@@ -10,10 +10,8 @@ interface BarcodeScannerSectionProps {
   onSuccess: () => void;
 }
 
-type ScannerState = 'idle' | 'scanning' | 'loading' | 'error';
-
 export default function BarcodeScannerSection({ date, mealType, onSuccess }: BarcodeScannerSectionProps) {
-  const [scannerState, setScannerState] = useState<ScannerState>('idle');
+  const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   const [servings, setServings] = useState('1');
@@ -21,127 +19,30 @@ export default function BarcodeScannerSection({ date, mealType, onSuccess }: Bar
   const [inputMode, setInputMode] = useState<'servings' | 'grams'>('servings');
   const [adding, setAdding] = useState(false);
 
-  const scannerRef = useRef<Html5Qrcode | null>(null);
-  const scannerElementId = 'barcode-scanner';
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Cleanup scanner on unmount
-  useEffect(() => {
-    return () => {
-      if (scannerRef.current?.isScanning) {
-        scannerRef.current.stop().catch(console.error);
-      }
-    };
-  }, []);
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const handleStartScan = async () => {
-    try {
-      setScannerState('scanning');
-      setErrorMessage('');
-
-      // Check for HTTPS (required for camera access)
-      if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
-        setErrorMessage('Camera requires HTTPS connection. Please use a secure connection.');
-        setScannerState('error');
-        return;
-      }
-
-      // Check for camera support
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setErrorMessage('Camera not supported on this browser. Please try Chrome or Safari.');
-        setScannerState('error');
-        return;
-      }
-
-      // Initialize scanner
-      const scanner = new Html5Qrcode(scannerElementId);
-      scannerRef.current = scanner;
-
-      // Get available cameras
-      let cameras;
-      try {
-        cameras = await Html5Qrcode.getCameras();
-        console.log('Available cameras:', cameras);
-      } catch (cameraListError) {
-        console.error('Failed to get cameras:', cameraListError);
-        setErrorMessage('Failed to access camera. Please ensure camera permissions are granted.');
-        setScannerState('error');
-        return;
-      }
-
-      if (!cameras || cameras.length === 0) {
-        setErrorMessage('No cameras found on this device.');
-        setScannerState('error');
-        return;
-      }
-
-      // Find back camera (environment facing) or use first available
-      let cameraId = cameras[0].id;
-      const backCamera = cameras.find(camera =>
-        camera.label.toLowerCase().includes('back') ||
-        camera.label.toLowerCase().includes('rear') ||
-        camera.label.toLowerCase().includes('environment')
-      );
-      if (backCamera) {
-        cameraId = backCamera.id;
-        console.log('Using back camera:', backCamera.label);
-      } else {
-        console.log('Using first available camera:', cameras[0].label);
-      }
-
-      // Start scanning with specific camera ID
-      try {
-        await scanner.start(
-          cameraId,
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 150 },
-          },
-          async (decodedText: string, decodedResult: any) => {
-            await handleScanSuccess({ decodedText, format: decodedResult.result.format.formatName });
-          },
-          (_errorMessage: string) => {
-            // Scan error (no barcode detected) - ignore these
-          }
-        );
-        console.log('Scanner started successfully');
-      } catch (startError) {
-        console.error('Scanner start error:', startError);
-        throw startError;
-      }
-    } catch (error: any) {
-      console.error('Scanner start error:', error);
-      console.error('Error name:', error?.name);
-      console.error('Error message:', error?.message);
-
-      if (error?.name === 'NotAllowedError' || error?.message?.includes('permission')) {
-        setErrorMessage('Camera access denied. Please check your browser permissions and try again.');
-      } else if (error?.name === 'NotFoundError' || error?.message?.includes('not find')) {
-        setErrorMessage('No camera found on this device.');
-      } else if (error?.name === 'NotReadableError' || error?.message?.includes('in use')) {
-        setErrorMessage('Camera is already in use by another app. Please close other apps and try again.');
-      } else if (error?.name === 'OverconstrainedError') {
-        setErrorMessage('Camera constraints not supported. Try using the front camera instead.');
-      } else if (error?.message?.includes('secure')) {
-        setErrorMessage('Camera requires HTTPS. Please ensure you are using a secure connection.');
-      } else {
-        setErrorMessage(`Camera error: ${error?.message || 'Unknown error'}. Please try again.`);
-      }
-      setScannerState('error');
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setErrorMessage('Please select an image file');
+      return;
     }
-  };
 
-  const handleScanSuccess = async (result: BarcodeScanResult) => {
+    setLoading(true);
+    setErrorMessage('');
+
     try {
-      // Stop scanner
-      if (scannerRef.current?.isScanning) {
-        await scannerRef.current.stop();
-      }
+      // Scan barcode from image using html5-qrcode
+      const html5QrCode = new Html5Qrcode('reader');
+      const result = await html5QrCode.scanFile(file, false);
 
-      setScannerState('loading');
-      setErrorMessage('');
+      console.log('Barcode detected:', result);
 
       // Lookup barcode in FatSecret database
-      const response = await barcodeApi.lookup(result.decodedText);
+      const response = await barcodeApi.lookup(result);
 
       if (response.error) {
         setErrorMessage(
@@ -149,34 +50,29 @@ export default function BarcodeScannerSection({ date, mealType, onSuccess }: Bar
             ? 'Product not found in database. Try searching by name instead.'
             : response.error
         );
-        setScannerState('error');
-        return;
-      }
-
-      if (response.data?.food) {
+      } else if (response.data?.food) {
         // Show serving selector modal
         setSelectedFood(response.data.food);
         setServings('1');
         setGrams(response.data.food.serving_size.toString());
         setInputMode('servings');
-        setScannerState('idle');
       } else {
         setErrorMessage('Failed to retrieve product details.');
-        setScannerState('error');
       }
-    } catch (error) {
-      console.error('Barcode lookup error:', error);
-      setErrorMessage('Failed to look up barcode. Please try again.');
-      setScannerState('error');
+    } catch (error: any) {
+      console.error('Barcode scan error:', error);
+      if (error?.message?.includes('No barcode') || error?.message?.includes('NotFoundException')) {
+        setErrorMessage('No barcode found in image. Please take a clearer photo of the barcode.');
+      } else {
+        setErrorMessage('Failed to scan barcode. Please try again with a clearer photo.');
+      }
+    } finally {
+      setLoading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
-  };
-
-  const handleStopScan = async () => {
-    if (scannerRef.current?.isScanning) {
-      await scannerRef.current.stop();
-    }
-    setScannerState('idle');
-    setErrorMessage('');
   };
 
   const handleCancelSelection = () => {
@@ -222,11 +118,6 @@ export default function BarcodeScannerSection({ date, mealType, onSuccess }: Bar
     if (!response.error) {
       onSuccess();
     }
-  };
-
-  const handleRetry = () => {
-    setErrorMessage('');
-    setScannerState('idle');
   };
 
   // Calculate nutrition for current servings/grams
@@ -388,10 +279,21 @@ export default function BarcodeScannerSection({ date, mealType, onSuccess }: Bar
         </div>
       )}
 
-      {/* Scanner States */}
-      {scannerState === 'idle' && !selectedFood && (
+      {/* Hidden elements for barcode scanning */}
+      <div id="reader" className="hidden"></div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handlePhotoSelect}
+        className="hidden"
+      />
+
+      {/* Scan button or loading state */}
+      {!selectedFood && !loading && (
         <button
-          onClick={handleStartScan}
+          onClick={() => fileInputRef.current?.click()}
           className="w-full btn btn-primary flex items-center justify-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -401,58 +303,26 @@ export default function BarcodeScannerSection({ date, mealType, onSuccess }: Bar
         </button>
       )}
 
-      {scannerState === 'scanning' && (
-        <div>
-          {/* Scanner viewfinder */}
-          <div id={scannerElementId} className="rounded-lg overflow-hidden mb-3"></div>
-
-          <div className="text-center mb-3">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Point your camera at a product barcode
-            </p>
-          </div>
-
-          <button
-            onClick={handleStopScan}
-            className="w-full btn btn-secondary"
-          >
-            Cancel Scan
-          </button>
-        </div>
-      )}
-
-      {scannerState === 'loading' && (
+      {loading && (
         <div className="flex flex-col items-center justify-center py-8">
           <LoadingSpinner size="lg" />
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
-            Looking up product...
+            Scanning barcode...
           </p>
         </div>
       )}
 
-      {scannerState === 'error' && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <div className="flex items-start gap-3 mb-3">
+      {/* Error message */}
+      {errorMessage && !selectedFood && (
+        <div className="mt-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div className="flex items-start gap-3">
             <svg className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-red-800 dark:text-red-200">
-                {errorMessage}
-              </p>
-              {errorMessage.includes('permission') && (
-                <p className="text-xs text-red-700 dark:text-red-300 mt-1">
-                  Go to your browser settings and allow camera access for this site.
-                </p>
-              )}
-            </div>
+            <p className="text-sm text-red-800 dark:text-red-200">
+              {errorMessage}
+            </p>
           </div>
-          <button
-            onClick={handleRetry}
-            className="w-full btn btn-secondary"
-          >
-            Try Again
-          </button>
         </div>
       )}
     </div>
