@@ -45,11 +45,29 @@ export default function BarcodeScannerSection({ date, mealType, onSuccess }: Bar
         img.src = imageUrl;
       });
 
-      // Scan barcode from image using ZXing
-      const codeReader = new BrowserMultiFormatReader();
-      const result = await codeReader.decodeFromImageElement(img);
+      console.log('Image loaded, size:', img.width, 'x', img.height);
 
-      console.log('Barcode detected:', result.getText());
+      // Scan barcode from image using ZXing with multiple attempts
+      const codeReader = new BrowserMultiFormatReader();
+
+      // Try multiple scanning methods
+      let result;
+      try {
+        // First attempt: direct decode
+        result = await codeReader.decodeFromImageElement(img);
+      } catch (directError) {
+        console.log('Direct decode failed, trying from URL...', directError);
+        try {
+          // Second attempt: decode from URL
+          result = await codeReader.decodeFromImageUrl(imageUrl);
+        } catch (urlError) {
+          console.log('URL decode also failed', urlError);
+          // Re-throw the error to be caught by outer catch
+          throw urlError;
+        }
+      }
+
+      console.log('Barcode detected:', result.getText(), 'Format:', result.getBarcodeFormat());
 
       // Clean up
       URL.revokeObjectURL(imageUrl);
@@ -74,10 +92,13 @@ export default function BarcodeScannerSection({ date, mealType, onSuccess }: Bar
       }
     } catch (error: any) {
       console.error('Barcode scan error:', error);
-      if (error?.message?.includes('No barcode') || error?.message?.includes('NotFoundException')) {
-        setErrorMessage('No barcode found in image. Please take a clearer photo of the barcode.');
+      console.error('Error type:', error?.constructor?.name);
+      console.error('Error message:', error?.message);
+
+      if (error?.message?.includes('No MultiFormat Readers') || error?.message?.includes('NotFoundException')) {
+        setErrorMessage('No barcode found in image. Please ensure the barcode is clear and well-lit.');
       } else {
-        setErrorMessage('Failed to scan barcode. Please try again with a clearer photo.');
+        setErrorMessage(`Scan failed: ${error?.message || 'Unknown error'}. Try taking a clearer photo.`);
       }
     } finally {
       setLoading(false);
