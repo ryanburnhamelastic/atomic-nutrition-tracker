@@ -195,10 +195,10 @@ export async function searchFatSecret(query: string, maxResults = 25): Promise<F
     const data = await response.json();
     console.log('FatSecret search response:', JSON.stringify(data, null, 2));
 
-    // FatSecret returns the data directly in 'foods' property, not 'foods_search'
-    // Return the data in the expected format for our FatSecretSearchResult interface
+    // FatSecret API response structure:
+    // { foods: { food: [...], total_results: "...", max_results: "...", page_number: "..." } }
     return {
-      foods: data.foods,
+      foods: data.foods,  // Pass the whole foods object (contains food array and metadata)
       total_results: data.foods?.total_results || '0',
       max_results: data.foods?.max_results || '0',
       page_number: data.foods?.page_number || '0',

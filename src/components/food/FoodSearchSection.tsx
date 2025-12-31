@@ -98,7 +98,9 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
       console.error('FatSecret API error:', fatSecretResponse.error);
     }
     if (fatSecretResponse.data) {
+      console.log('FatSecret data:', JSON.stringify(fatSecretResponse.data, null, 2));
       console.log('FatSecret foods count:', fatSecretResponse.data.foods?.length || 0);
+      console.log('FatSecret totalResults:', fatSecretResponse.data.totalResults);
     }
 
     const combinedResults: SearchResult[] = [];
