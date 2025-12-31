@@ -63,7 +63,6 @@ const handler: Handler = async (event: HandlerEvent) => {
             fat,
             food_id,
             custom_food_id,
-            brand,
             date,
             created_at
           FROM food_entries
@@ -82,11 +81,10 @@ const handler: Handler = async (event: HandlerEvent) => {
             fat,
             food_id,
             custom_food_id,
-            brand,
             COUNT(*) as frequency,
             MAX(date) as last_eaten
           FROM recent_entries
-          GROUP BY name, serving_size, serving_unit, calories, protein, carbs, fat, food_id, custom_food_id, brand
+          GROUP BY name, serving_size, serving_unit, calories, protein, carbs, fat, food_id, custom_food_id
         )
         SELECT
           name,
@@ -98,7 +96,7 @@ const handler: Handler = async (event: HandlerEvent) => {
           fat,
           food_id,
           custom_food_id,
-          brand,
+          NULL::text as brand,
           frequency,
           last_eaten
         FROM food_stats
