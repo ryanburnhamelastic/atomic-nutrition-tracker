@@ -22,6 +22,7 @@ interface SearchResult {
   custom_food_id?: string | null;
   frequency?: number;
   last_eaten?: string;
+  last_servings?: number;
 }
 
 interface FoodSearchSectionProps {
@@ -42,6 +43,8 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
   const [recentFoods, setRecentFoods] = useState<SearchResult[]>([]);
   const [favoriting, setFavoriting] = useState<string | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [selectedRecentIds, setSelectedRecentIds] = useState<Set<string>>(new Set());
+  const [multiAdding, setMultiAdding] = useState(false);
 
   // Load recent foods when component mounts or meal type changes
   const loadRecentFoods = useCallback(async () => {
@@ -63,6 +66,7 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
           custom_food_id: f.custom_food_id,
           frequency: f.frequency,
           last_eaten: f.last_eaten,
+          last_servings: f.last_servings,
         }))
       );
     }
@@ -278,6 +282,64 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
     }
   };
 
+  const handleToggleRecentSelect = (foodId: string) => {
+    setSelectedRecentIds(prev => {
+      const next = new Set(prev);
+      if (next.has(foodId)) {
+        next.delete(foodId);
+      } else {
+        next.add(foodId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllRecent = () => {
+    if (selectedRecentIds.size === recentFoods.length) {
+      setSelectedRecentIds(new Set());
+    } else {
+      setSelectedRecentIds(new Set(recentFoods.map(f => f.id)));
+    }
+  };
+
+  const handleMultiAdd = async () => {
+    if (selectedRecentIds.size === 0) return;
+
+    setMultiAdding(true);
+
+    // Get selected foods
+    const selectedFoods = recentFoods.filter(f => selectedRecentIds.has(f.id));
+
+    // Add all selected foods in parallel
+    await Promise.all(
+      selectedFoods.map(food => {
+        const idField = food.custom_food_id
+          ? { customFoodId: food.custom_food_id }
+          : food.food_id
+            ? { foodId: food.food_id }
+            : {};
+
+        return foodEntriesApi.create({
+          date,
+          mealType,
+          servings: food.last_servings || 1,
+          name: food.name,
+          servingSize: food.serving_size,
+          servingUnit: food.serving_unit,
+          calories: food.calories,
+          protein: food.protein,
+          carbs: food.carbs,
+          fat: food.fat,
+          ...idField,
+        });
+      })
+    );
+
+    setMultiAdding(false);
+    setSelectedRecentIds(new Set());
+    onSuccess();
+  };
+
   // Calculate nutrition for current servings/grams
   let servingCount: number;
   if (inputMode === 'grams' && selectedFood) {
@@ -468,19 +530,54 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
           {/* Recent Foods - Show when no search query or at top of results */}
           {!query.trim() && recentFoods.length > 0 && (
             <div className="mt-3">
-              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-                Recent for {mealType}
-              </h3>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedRecentIds.size === recentFoods.length && recentFoods.length > 0}
+                    onChange={handleSelectAllRecent}
+                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  />
+                  <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    Recent for {mealType}
+                  </h3>
+                </div>
+                {selectedRecentIds.size > 0 && (
+                  <button
+                    onClick={handleMultiAdd}
+                    disabled={multiAdding}
+                    className="text-sm px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1"
+                  >
+                    {multiAdding ? (
+                      <>
+                        <LoadingSpinner size="sm" />
+                        Adding {selectedRecentIds.size}...
+                      </>
+                    ) : (
+                      `Add ${selectedRecentIds.size} Selected`
+                    )}
+                  </button>
+                )}
+              </div>
               <div className="divide-y divide-gray-100 dark:divide-gray-700">
                 {recentFoods.map((food) => (
-                  <FoodResultRow
-                    key={food.id}
-                    food={food}
-                    isFavorited={favoriteIds.has(food.id)}
-                    favoriting={favoriting === food.id}
-                    onSelect={handleSelectFood}
-                    onToggleFavorite={handleToggleFavorite}
-                  />
+                  <div key={food.id} className="flex items-center gap-2 py-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedRecentIds.has(food.id)}
+                      onChange={() => handleToggleRecentSelect(food.id)}
+                      className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0" onClick={() => handleSelectFood(food)} role="button" tabIndex={0}>
+                      <FoodResultRow
+                        food={food}
+                        isFavorited={favoriteIds.has(food.id)}
+                        favoriting={favoriting === food.id}
+                        onSelect={handleSelectFood}
+                        onToggleFavorite={handleToggleFavorite}
+                      />
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>

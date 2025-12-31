@@ -272,6 +272,7 @@ export const openFoodFactsApi = {
 export interface RecentFood extends Food {
   frequency: number;
   last_eaten: string;
+  last_servings: number;
   food_id: string | null;
   custom_food_id: string | null;
 }
