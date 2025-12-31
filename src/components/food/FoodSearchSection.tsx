@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CustomFood, Food, MealType, RecentFood } from '../../types';
-import { customFoodsApi, foodsApi, fatSecretApi, recentFoodsApi, favoriteFoodsApi, foodEntriesApi } from '../../lib/api';
+import { customFoodsApi, foodsApi, openFoodFactsApi, recentFoodsApi, favoriteFoodsApi, foodEntriesApi } from '../../lib/api';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 // Source type for search results
-type FoodSource = 'custom' | 'local' | 'fatsecret' | 'recent';
+type FoodSource = 'custom' | 'local' | 'openfoodfacts' | 'recent';
 
 // Unified food item for display
 interface SearchResult {
@@ -76,7 +76,7 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
     }
   }, []);
 
-  // Debounced search - searches custom foods, local database, and FatSecret
+  // Debounced search - searches custom foods, local database, and Open Food Facts
   const searchFoods = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults([]);
@@ -86,21 +86,21 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
     setLoading(true);
 
     // Search all sources in parallel
-    const [customResponse, localResponse, fatSecretResponse] = await Promise.all([
+    const [customResponse, localResponse, openFoodFactsResponse] = await Promise.all([
       customFoodsApi.list(searchQuery),
       foodsApi.search(searchQuery, 15),
-      fatSecretApi.search(searchQuery, 15),
+      openFoodFactsApi.search(searchQuery, 15),
     ]);
 
     // Debug logging
-    console.log('FatSecret API response:', fatSecretResponse);
-    if (fatSecretResponse.error) {
-      console.error('FatSecret API error:', fatSecretResponse.error);
+    console.log('Open Food Facts API response:', openFoodFactsResponse);
+    if (openFoodFactsResponse.error) {
+      console.error('Open Food Facts API error:', openFoodFactsResponse.error);
     }
-    if (fatSecretResponse.data) {
-      console.log('FatSecret data:', JSON.stringify(fatSecretResponse.data, null, 2));
-      console.log('FatSecret foods count:', fatSecretResponse.data.foods?.length || 0);
-      console.log('FatSecret totalResults:', fatSecretResponse.data.totalResults);
+    if (openFoodFactsResponse.data) {
+      console.log('Open Food Facts data:', JSON.stringify(openFoodFactsResponse.data, null, 2));
+      console.log('Open Food Facts foods count:', openFoodFactsResponse.data.foods?.length || 0);
+      console.log('Open Food Facts totalResults:', openFoodFactsResponse.data.totalResults);
     }
 
     const combinedResults: SearchResult[] = [];
@@ -141,10 +141,10 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
       );
     }
 
-    // Add FatSecret foods (branded and restaurant foods)
-    if (fatSecretResponse.data?.foods) {
+    // Add Open Food Facts foods (global branded food database)
+    if (openFoodFactsResponse.data?.foods) {
       combinedResults.push(
-        ...fatSecretResponse.data.foods.map((f: Food) => ({
+        ...openFoodFactsResponse.data.foods.map((f: Food) => ({
           id: f.id,
           name: f.name,
           brand: f.brand,
@@ -154,7 +154,7 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
           protein: f.protein,
           carbs: f.carbs,
           fat: f.fat,
-          source: 'fatsecret' as FoodSource,
+          source: 'openfoodfacts' as FoodSource,
         }))
       );
     }
@@ -198,7 +198,7 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
   const handleToggleFavorite = async (food: SearchResult, e: React.MouseEvent) => {
     e.stopPropagation();
 
-    // Only allow favoriting from local database (not custom, FatSecret, or recent)
+    // Only allow favoriting from local database (not custom, Open Food Facts, or recent)
     if (food.source !== 'local') {
       return;
     }
@@ -249,7 +249,7 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
           ? { customFoodId: selectedFood.id }
           : selectedFood.source === 'local'
             ? { foodId: selectedFood.id }
-            : {}; // FatSecret foods don't have a local ID reference
+            : {}; // Open Food Facts foods don't have a local ID reference
 
     const response = await foodEntriesApi.create({
       date,
@@ -548,9 +548,9 @@ function FoodResultRow({ food, isFavorited, favoriting, onSelect, onToggleFavori
               My Food
             </span>
           )}
-          {food.source === 'fatsecret' && (
-            <span className="text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded flex-shrink-0">
-              FatSecret
+          {food.source === 'openfoodfacts' && (
+            <span className="text-xs px-1.5 py-0.5 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded flex-shrink-0">
+              Open Food Facts
             </span>
           )}
           {food.source === 'recent' && food.frequency && (

@@ -72,7 +72,7 @@ export default function BarcodeScannerSection({ date, mealType, onSuccess }: Bar
       // Clean up
       URL.revokeObjectURL(imageUrl);
 
-      // Lookup barcode in FatSecret database
+      // Lookup barcode in Open Food Facts database
       const response = await barcodeApi.lookup(result.getText());
 
       if (response.error) {

@@ -1,7 +1,7 @@
 import { Handler, HandlerEvent } from '@netlify/functions';
 import { corsHeaders } from './db';
 import { authenticateRequest, unauthorizedResponse } from './auth';
-import { searchFatSecret, transformFatSecretFoods } from './lib/fatsecret';
+import { searchOpenFoodFacts, transformOpenFoodFactsProducts } from './lib/openfoodfacts';
 
 const handler: Handler = async (event: HandlerEvent) => {
   // Handle CORS preflight
@@ -16,7 +16,7 @@ const handler: Handler = async (event: HandlerEvent) => {
       return unauthorizedResponse(corsHeaders, authResult.error);
     }
 
-    // GET - Search FatSecret foods
+    // GET - Search Open Food Facts
     if (event.httpMethod === 'GET') {
       const query = event.queryStringParameters?.q;
       const limit = Math.min(Number(event.queryStringParameters?.limit) || 20, 50);
@@ -29,34 +29,25 @@ const handler: Handler = async (event: HandlerEvent) => {
         };
       }
 
-      // Check if FatSecret API credentials are configured
-      if (!process.env.FATSECRET_CLIENT_ID || !process.env.FATSECRET_CLIENT_SECRET) {
-        return {
-          statusCode: 503,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: 'FatSecret API not configured' }),
-        };
-      }
-
-      const result = await searchFatSecret(query, limit);
+      const result = await searchOpenFoodFacts(query, limit);
 
       if (!result) {
         return {
           statusCode: 502,
           headers: corsHeaders,
-          body: JSON.stringify({ error: 'Failed to search FatSecret database' }),
+          body: JSON.stringify({ error: 'Failed to search Open Food Facts database' }),
         };
       }
 
-      // Transform foods to our format
-      const foods = transformFatSecretFoods(result);
+      // Transform products to our format
+      const foods = transformOpenFoodFactsProducts(result);
 
       return {
         statusCode: 200,
         headers: corsHeaders,
         body: JSON.stringify({
           foods,
-          totalResults: parseInt(result.total_results || '0'),
+          totalResults: result.count || 0,
         }),
       };
     }
@@ -67,7 +58,7 @@ const handler: Handler = async (event: HandlerEvent) => {
       body: JSON.stringify({ error: 'Method not allowed' }),
     };
   } catch (error) {
-    console.error('FatSecret search function error:', error);
+    console.error('Open Food Facts search function error:', error);
     return {
       statusCode: 500,
       headers: corsHeaders,

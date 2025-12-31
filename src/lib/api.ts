@@ -251,19 +251,19 @@ export const foodsApi = {
 };
 
 /**
- * FatSecret Food Search Result
+ * Open Food Facts Search Result
  */
-export interface FatSecretSearchResult {
+export interface OpenFoodFactsSearchResult {
   foods: Food[];
   totalResults: number;
 }
 
 /**
- * FatSecret Foods API (branded/restaurant foods)
+ * Open Food Facts API (free, open-source food database with 2.8M+ products)
  */
-export const fatSecretApi = {
+export const openFoodFactsApi = {
   search: (query: string, limit = 20) =>
-    apiRequest<FatSecretSearchResult>(`/fatsecret-search?q=${encodeURIComponent(query)}&limit=${limit}`),
+    apiRequest<OpenFoodFactsSearchResult>(`/openfoodfacts-search?q=${encodeURIComponent(query)}&limit=${limit}`),
 };
 
 /**
@@ -292,7 +292,7 @@ export interface BarcodeLookupResult {
 }
 
 /**
- * Barcode Lookup API (FatSecret barcode database)
+ * Barcode Lookup API (Open Food Facts barcode database)
  */
 export const barcodeApi = {
   lookup: (barcode: string) =>

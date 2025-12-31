@@ -1,7 +1,23 @@
 import { Handler, HandlerEvent } from '@netlify/functions';
 import { corsHeaders } from './db';
 import { authenticateRequest, unauthorizedResponse } from './auth';
-import { barcodeLookupFatSecret, getFoodByIdFatSecret, validateBarcode, transformFatSecretFood } from './lib/fatsecret';
+import { barcodeLookupOpenFoodFacts, transformOpenFoodFactsProduct } from './lib/openfoodfacts';
+
+/**
+ * Validate and normalize barcode format
+ * Accepts: UPC-A (12 digits), EAN-13 (13 digits), EAN-8 (8 digits)
+ */
+function validateBarcode(barcode: string): { valid: boolean; normalized: string | null } {
+  // Remove whitespace and non-digit characters
+  const cleaned = barcode.replace(/\D/g, '');
+
+  // Check valid lengths
+  if ([8, 12, 13].includes(cleaned.length)) {
+    return { valid: true, normalized: cleaned };
+  }
+
+  return { valid: false, normalized: null };
+}
 
 const handler: Handler = async (event: HandlerEvent) => {
   // Handle CORS preflight
@@ -40,19 +56,10 @@ const handler: Handler = async (event: HandlerEvent) => {
         };
       }
 
-      // Check if FatSecret API credentials are configured
-      if (!process.env.FATSECRET_CLIENT_ID || !process.env.FATSECRET_CLIENT_SECRET) {
-        return {
-          statusCode: 503,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: 'FatSecret API not configured' }),
-        };
-      }
+      // Lookup product in Open Food Facts
+      const product = await barcodeLookupOpenFoodFacts(validation.normalized);
 
-      // Step 1: Lookup food_id from barcode
-      const foodId = await barcodeLookupFatSecret(validation.normalized);
-
-      if (!foodId) {
+      if (!product) {
         return {
           statusCode: 404,
           headers: corsHeaders,
@@ -62,19 +69,8 @@ const handler: Handler = async (event: HandlerEvent) => {
         };
       }
 
-      // Step 2: Get full food details by food_id
-      const foodDetails = await getFoodByIdFatSecret(foodId);
-
-      if (!foodDetails) {
-        return {
-          statusCode: 502,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: 'Failed to retrieve food details from database' }),
-        };
-      }
-
       // Transform to unified Food interface
-      const food = transformFatSecretFood(foodDetails);
+      const food = transformOpenFoodFactsProduct(product);
 
       return {
         statusCode: 200,
