@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CustomFood, Food, MealType, RecentFood } from '../../types';
-import { customFoodsApi, foodsApi, usdaApi, fatSecretApi, recentFoodsApi, favoriteFoodsApi, foodEntriesApi } from '../../lib/api';
+import { customFoodsApi, foodsApi, fatSecretApi, recentFoodsApi, favoriteFoodsApi, foodEntriesApi } from '../../lib/api';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 // Source type for search results
-type FoodSource = 'custom' | 'local' | 'usda' | 'fatsecret' | 'recent';
+type FoodSource = 'custom' | 'local' | 'fatsecret' | 'recent';
 
 // Unified food item for display
 interface SearchResult {
@@ -76,7 +76,7 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
     }
   }, []);
 
-  // Debounced search - searches custom foods, local database, USDA, and FatSecret
+  // Debounced search - searches custom foods, local database, and FatSecret
   const searchFoods = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults([]);
@@ -85,11 +85,10 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
 
     setLoading(true);
 
-    // Search all sources in parallel (now 4 sources)
-    const [customResponse, localResponse, usdaResponse, fatSecretResponse] = await Promise.all([
+    // Search all sources in parallel
+    const [customResponse, localResponse, fatSecretResponse] = await Promise.all([
       customFoodsApi.list(searchQuery),
       foodsApi.search(searchQuery, 15),
-      usdaApi.search(searchQuery, 15),
       fatSecretApi.search(searchQuery, 15),
     ]);
 
@@ -140,7 +139,7 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
       );
     }
 
-    // Add FatSecret foods (prioritized over USDA for branded/restaurant foods)
+    // Add FatSecret foods (branded and restaurant foods)
     if (fatSecretResponse.data?.foods) {
       combinedResults.push(
         ...fatSecretResponse.data.foods.map((f: Food) => ({
@@ -154,24 +153,6 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
           carbs: f.carbs,
           fat: f.fat,
           source: 'fatsecret' as FoodSource,
-        }))
-      );
-    }
-
-    // Add USDA foods
-    if (usdaResponse.data?.foods) {
-      combinedResults.push(
-        ...usdaResponse.data.foods.map((f: Food) => ({
-          id: f.id,
-          name: f.name,
-          brand: f.brand,
-          serving_size: f.serving_size,
-          serving_unit: f.serving_unit,
-          calories: f.calories,
-          protein: f.protein,
-          carbs: f.carbs,
-          fat: f.fat,
-          source: 'usda' as FoodSource,
         }))
       );
     }
@@ -215,7 +196,7 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
   const handleToggleFavorite = async (food: SearchResult, e: React.MouseEvent) => {
     e.stopPropagation();
 
-    // Only allow favoriting from local database (not custom, USDA, FatSecret, or recent)
+    // Only allow favoriting from local database (not custom, FatSecret, or recent)
     if (food.source !== 'local') {
       return;
     }
@@ -266,7 +247,7 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
           ? { customFoodId: selectedFood.id }
           : selectedFood.source === 'local'
             ? { foodId: selectedFood.id }
-            : {}; // USDA/FatSecret foods don't have a local ID reference
+            : {}; // FatSecret foods don't have a local ID reference
 
     const response = await foodEntriesApi.create({
       date,
@@ -563,11 +544,6 @@ function FoodResultRow({ food, isFavorited, favoriting, onSelect, onToggleFavori
           {food.source === 'custom' && (
             <span className="text-xs px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded flex-shrink-0">
               My Food
-            </span>
-          )}
-          {food.source === 'usda' && (
-            <span className="text-xs px-1.5 py-0.5 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded flex-shrink-0">
-              USDA
             </span>
           )}
           {food.source === 'fatsecret' && (

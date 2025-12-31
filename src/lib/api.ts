@@ -251,22 +251,6 @@ export const foodsApi = {
 };
 
 /**
- * USDA Food Search Result
- */
-export interface USDASearchResult {
-  foods: Food[];
-  totalHits: number;
-}
-
-/**
- * USDA Foods API (external USDA database)
- */
-export const usdaApi = {
-  search: (query: string, limit = 20) =>
-    apiRequest<USDASearchResult>(`/usda-search?q=${encodeURIComponent(query)}&limit=${limit}`),
-};
-
-/**
  * FatSecret Food Search Result
  */
 export interface FatSecretSearchResult {

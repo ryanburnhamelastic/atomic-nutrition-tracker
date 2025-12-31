@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atomic Nutrition Tracker vs MacroFactor vs MyFitnessPal | Feature Comparison 2025</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .updated {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            font-style: italic;
+        }
+
+        .pricing-section {
+            background: #f9fafb;
+            padding: 40px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .pricing-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 2px solid #e5e7eb;
+        }
+
+        .pricing-card.highlight {
+            border-color: #10b981;
+            box-shadow: 0 8px 16px rgba(16, 185, 129, 0.2);
+        }
+
+        .pricing-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #1f2937;
+        }
+
+        .price {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin: 15px 0;
+        }
+
+        .price-note {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-bottom: 20px;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+
+        .comparison-table thead {
+            background: #f3f4f6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .comparison-table th {
+            padding: 20px 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #1f2937;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .comparison-table th:first-child {
+            width: 30%;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 20px 15px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: center;
+        }
+
+        .comparison-table td:first-child {
+            text-align: left;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .category-header {
+            background: #f9fafb;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #667eea;
+            padding: 25px 15px !important;
+        }
+
+        .check {
+            color: #10b981;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .cross {
+            color: #ef4444;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .partial {
+            color: #f59e0b;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .feature-badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .unique-badge {
+            background: #8b5cf6;
+        }
+
+        .app-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .macrofactor-header {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .mfp-header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+
+        .notes {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px 20px;
+            margin: 20px 40px;
+            border-radius: 8px;
+        }
+
+        .notes h4 {
+            color: #92400e;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        .notes p {
+            color: #78350f;
+            font-size: 0.95rem;
+        }
+
+        .notes ul {
+            margin: 10px 0 0 20px;
+            color: #78350f;
+        }
+
+        .notes li {
+            margin: 5px 0;
+        }
+
+        .summary {
+            background: #f0fdf4;
+            padding: 40px;
+            margin: 40px;
+            border-radius: 12px;
+            border: 2px solid #10b981;
+        }
+
+        .summary h3 {
+            color: #065f46;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .summary ul {
+            margin: 15px 0 0 20px;
+            color: #047857;
+        }
+
+        .summary li {
+            margin: 10px 0;
+            font-size: 1.05rem;
+        }
+
+        .sources {
+            background: #f9fafb;
+            padding: 40px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .sources h3 {
+            color: #1f2937;
+            margin-bottom: 15px;
+        }
+
+        .sources a {
+            color: #667eea;
+            text-decoration: none;
+            display: block;
+            margin: 8px 0;
+        }
+
+        .sources a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .comparison-table {
+                font-size: 0.9rem;
+            }
+
+            .comparison-table th,
+            .comparison-table td {
+                padding: 12px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏆 Nutrition Tracker Showdown 2025</h1>
+            <p class="subtitle">Atomic Nutrition Tracker vs MacroFactor vs MyFitnessPal</p>
+            <p class="updated">Comprehensive Feature Comparison | Updated December 30, 2025</p>
+        </header>
+
+        <div class="pricing-section">
+            <h2 style="text-align: center; margin-bottom: 10px;">Pricing Comparison</h2>
+            <p style="text-align: center; color: #6b7280; margin-bottom: 30px;">All prices in USD</p>
+            <div class="pricing-grid">
+                <div class="pricing-card highlight">
+                    <h3>Atomic Nutrition Tracker</h3>
+                    <div class="price">$0</div>
+                    <p class="price-note">Completely FREE<br>No ads, no limits</p>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">✅ All features included</li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">✅ Unlimited AI features</li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">✅ No subscription required</li>
+                        <li style="padding: 8px 0;">✅ Open-source code</li>
+                    </ul>
+                </div>
+
+                <div class="pricing-card">
+                    <h3>MacroFactor</h3>
+                    <div class="price">$6-12/mo</div>
+                    <p class="price-note">$72/year or $12/month<br>7-day free trial</p>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">• All features require paid subscription</li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">• No free tier</li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">• Cancel anytime</li>
+                        <li style="padding: 8px 0;">• Most affordable premium tracker</li>
+                    </ul>
+                </div>
+
+                <div class="pricing-card">
+                    <h3>MyFitnessPal</h3>
+                    <div class="price">Free - $25/mo</div>
+                    <p class="price-note">Free, Premium ($80/yr), Premium+ ($100/yr)</p>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">• Free version with ads</li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">• Limited features in free tier</li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">• Premium: $20/mo or $80/yr</li>
+                        <li style="padding: 8px 0;">• Premium+: $25/mo or $100/yr</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Feature</th>
+                    <th><span class="app-header">Atomic Nutrition Tracker</span></th>
+                    <th><span class="app-header macrofactor-header">MacroFactor</span></th>
+                    <th><span class="app-header mfp-header">MyFitnessPal</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- FOOD LOGGING -->
+                <tr>
+                    <td colspan="4" class="category-header">📱 Food Logging & Database</td>
+                </tr>
+                <tr>
+                    <td>Barcode Scanner</td>
+                    <td><span class="check">✓</span><br><small>FatSecret API</small></td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span><br><small>Premium only</small></td>
+                </tr>
+                <tr>
+                    <td>Food Database Size</td>
+                    <td><span class="check">✓</span><br><small>300k+ USDA + FatSecret</small></td>
+                    <td><span class="check">✓</span><br><small>Verified database</small></td>
+                    <td><span class="check">✓</span><br><small>14M+ foods</small></td>
+                </tr>
+                <tr>
+                    <td>AI Photo Food Recognition</td>
+                    <td><span class="check">✓</span><span class="feature-badge unique-badge">FREE</span><br><small>Gemini 2.0 Flash</small></td>
+                    <td><span class="check">✓</span><br><small>Released April 2025</small></td>
+                    <td><span class="check">✓</span><br><small>Meal Scan (Premium)</small></td>
+                </tr>
+                <tr>
+                    <td>Voice Logging</td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span><br><small>Premium only</small></td>
+                </tr>
+                <tr>
+                    <td>Text-Based AI Food Parsing</td>
+                    <td><span class="check">✓</span><span class="feature-badge unique-badge">FREE</span><br><small>"chicken breast 200g"</small></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                </tr>
+                <tr>
+                    <td>Recipe Import from URL</td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="cross">✗</span></td>
+                </tr>
+                <tr>
+                    <td>Custom Foods</td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span></td>
+                </tr>
+                <tr>
+                    <td>Favorite Foods Quick Add</td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span><br><small>Smart history</small></td>
+                    <td><span class="check">✓</span></td>
+                </tr>
+                <tr>
+                    <td>Meal Completion/Locking</td>
+                    <td><span class="check">✓</span><span class="feature-badge unique-badge">UNIQUE</span><br><small>Lock meals to prevent edits</small></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                </tr>
+                <tr>
+                    <td>Recent Foods by Meal Type</td>
+                    <td><span class="check">✓</span><span class="feature-badge">SMART</span><br><small>Context-aware by meal</small></td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span></td>
+                </tr>
+
+                <!-- AI & INTELLIGENCE -->
+                <tr>
+                    <td colspan="4" class="category-header">🤖 AI & Intelligence Features</td>
+                </tr>
+                <tr>
+                    <td>Macro-Aware AI Suggestions</td>
+                    <td><span class="check">✓</span><span class="feature-badge unique-badge">UNIQUE</span><br><small>AI adjusts portions based on remaining macros</small></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                </tr>
+                <tr>
+                    <td>AI Meal Planner</td>
+                    <td><span class="check">✓</span><span class="feature-badge unique-badge">FREE</span><br><small>Real-time suggestions based on day</small></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span><br><small>Premium+ only ($100/yr)</small></td>
+                </tr>
+                <tr>
+                    <td>Weekly Program Reviews</td>
+                    <td><span class="check">✓</span><span class="feature-badge unique-badge">UNIQUE</span><br><small>AI analyzes progress & recommends adjustments</small></td>
+                    <td><span class="check">✓</span><br><small>Expenditure algorithm</small></td>
+                    <td><span class="cross">✗</span></td>
+                </tr>
+                <tr>
+                    <td>Adaptive TDEE Calculation</td>
+                    <td><span class="check">✓</span><br><small>Via AI weekly reviews</small></td>
+                    <td><span class="check">✓</span><span class="feature-badge">BEST</span><br><small>Real-time expenditure tracking</small></td>
+                    <td><span class="cross">✗</span></td>
+                </tr>
+                <tr>
+                    <td>Macro Auto-Adjustment</td>
+                    <td><span class="check">✓</span><br><small>Accept/reject AI recommendations</small></td>
+                    <td><span class="check">✓</span><br><small>Automatic weekly adjustments</small></td>
+                    <td><span class="cross">✗</span></td>
+                </tr>
+
+                <!-- TRACKING & ANALYTICS -->
+                <tr>
+                    <td colspan="4" class="category-header">📊 Tracking & Analytics</td>
+                </tr>
+                <tr>
+                    <td>Macro Tracking</td>
+                    <td><span class="check">✓</span><br><small>Protein, Carbs, Fat</small></td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span><br><small>Premium for macros by meal</small></td>
+                </tr>
+                <tr>
+                    <td>Micronutrient Tracking</td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span><br><small>Vitamins, minerals, fiber</small></td>
+                    <td><span class="check">✓</span></td>
+                </tr>
+                <tr>
+                    <td>Weight Tracking</td>
+                    <td><span class="check">✓</span><br><small>EWMA trend weight</small></td>
+                    <td><span class="check">✓</span><br><small>Advanced trend algorithms</small></td>
+                    <td><span class="check">✓</span></td>
+                </tr>
+                <tr>
+                    <td>Compliance & Streak Tracking</td>
+                    <td><span class="check">✓</span><br><small>Days logged, streaks, achievements</small></td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span></td>
+                </tr>
+                <tr>
+                    <td>Program Management</td>
+                    <td><span class="check">✓</span><br><small>Time-bound cuts/bulks/maintains</small></td>
+                    <td><span class="check">✓</span><br><small>Goal-based programs</small></td>
+                    <td><span class="cross">✗</span></td>
+                </tr>
+                <tr>
+                    <td>Intermittent Fasting Tracker</td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span><br><small>Premium feature</small></td>
+                </tr>
+                <tr>
+                    <td>Net Carbs Tracking</td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span><br><small>Premium only</small></td>
+                </tr>
+                <tr>
+                    <td>Custom Goals by Day</td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span><br><small>Premium only</small></td>
+                </tr>
+
+                <!-- INTERFACE & UX -->
+                <tr>
+                    <td colspan="4" class="category-header">🎨 Interface & Experience</td>
+                </tr>
+                <tr>
+                    <td>Dark Mode</td>
+                    <td><span class="check">✓</span><br><small>Full dark theme</small></td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span></td>
+                </tr>
+                <tr>
+                    <td>Progressive Web App (PWA)</td>
+                    <td><span class="check">✓</span><br><small>Install on any device</small></td>
+                    <td><span class="cross">✗</span><br><small>Native apps only</small></td>
+                    <td><span class="cross">✗</span><br><small>Native apps only</small></td>
+                </tr>
+                <tr>
+                    <td>Ad-Free Experience</td>
+                    <td><span class="check">✓</span><span class="feature-badge">FREE</span></td>
+                    <td><span class="check">✓</span><br><small>Paid subscription</small></td>
+                    <td><span class="check">✓</span><br><small>Premium only</small></td>
+                </tr>
+                <tr>
+                    <td>Apple Watch Support</td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span></td>
+                </tr>
+                <tr>
+                    <td>Multiple Platforms</td>
+                    <td><span class="check">✓</span><br><small>Web, iOS, Android (PWA)</small></td>
+                    <td><span class="check">✓</span><br><small>iOS, Android native</small></td>
+                    <td><span class="check">✓</span><br><small>iOS, Android, Web</small></td>
+                </tr>
+
+                <!-- DATA & PRIVACY -->
+                <tr>
+                    <td colspan="4" class="category-header">🔒 Data & Privacy</td>
+                </tr>
+                <tr>
+                    <td>Open Source</td>
+                    <td><span class="check">✓</span><span class="feature-badge unique-badge">UNIQUE</span><br><small>Full transparency</small></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                </tr>
+                <tr>
+                    <td>Data Export</td>
+                    <td><span class="check">✓</span><br><small>PostgreSQL direct access</small></td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span></td>
+                </tr>
+                <tr>
+                    <td>Authentication</td>
+                    <td><span class="check">✓</span><br><small>Clerk (enterprise-grade)</small></td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span></td>
+                </tr>
+
+                <!-- INTEGRATIONS -->
+                <tr>
+                    <td colspan="4" class="category-header">🔗 Integrations & Ecosystem</td>
+                </tr>
+                <tr>
+                    <td>Fitness App Integration</td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span><br><small>Apple Health, others</small></td>
+                    <td><span class="check">✓</span><br><small>200+ apps</small></td>
+                </tr>
+                <tr>
+                    <td>Grocery Shopping Integration</td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span><br><small>Premium+ only</small></td>
+                </tr>
+                <tr>
+                    <td>Community Features</td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span><br><small>Forums, groups, friends</small></td>
+                </tr>
+
+                <!-- TECHNICAL -->
+                <tr>
+                    <td colspan="4" class="category-header">⚙️ Technical Features</td>
+                </tr>
+                <tr>
+                    <td>Offline Mode</td>
+                    <td><span class="check">✓</span><br><small>PWA service workers</small></td>
+                    <td><span class="partial">~</span><br><small>Limited offline</small></td>
+                    <td><span class="partial">~</span><br><small>Limited offline</small></td>
+                </tr>
+                <tr>
+                    <td>Real-time Sync</td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span></td>
+                </tr>
+                <tr>
+                    <td>Backend Technology</td>
+                    <td><span class="check">✓</span><br><small>Serverless (Netlify + Neon)</small></td>
+                    <td><span class="check">✓</span><br><small>Proprietary</small></td>
+                    <td><span class="check">✓</span><br><small>Proprietary</small></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="notes">
+            <h4>⚡ Key Differentiators for Atomic Nutrition Tracker</h4>
+            <ul>
+                <li><strong>100% Free:</strong> All features including AI are completely free with no ads or limitations</li>
+                <li><strong>Unique Macro-Aware AI:</strong> AI adjusts portion suggestions based on your remaining macros for the day</li>
+                <li><strong>Meal Completion System:</strong> Lock meals once eaten to prevent accidental edits</li>
+                <li><strong>Context-Aware Recent Foods:</strong> Shows foods you typically eat at each specific meal</li>
+                <li><strong>Open Source:</strong> Full code transparency and self-hosting capability</li>
+                <li><strong>Modern Tech Stack:</strong> Built with latest React 19, TypeScript, and serverless architecture</li>
+                <li><strong>No Vendor Lock-in:</strong> Direct PostgreSQL access to your data</li>
+            </ul>
+        </div>
+
+        <div class="summary">
+            <h3>🎯 Summary & Recommendations</h3>
+            <ul>
+                <li><strong>Choose Atomic Nutrition Tracker if:</strong> You want a completely free, modern, AI-powered tracker with unique features like macro-aware AI suggestions and meal completion. Perfect for tech-savvy users who value open-source software.</li>
+
+                <li><strong>Choose MacroFactor if:</strong> You want the most scientifically advanced TDEE tracking and automatic macro adjustments. Best for serious bodybuilders and athletes willing to pay for cutting-edge algorithms. Most affordable premium option at $6-12/month.</li>
+
+                <li><strong>Choose MyFitnessPal if:</strong> You need extensive third-party integrations (200+ apps), community features, and the world's largest food database (14M+ foods). Good free tier available, but many features require Premium ($80-100/year).</li>
+            </ul>
+        </div>
+
+        <div class="notes">
+            <h4>📝 Additional Notes</h4>
+            <ul>
+                <li>MyFitnessPal has the largest food database but quality varies due to user-submitted entries</li>
+                <li>MacroFactor has the most sophisticated TDEE algorithm with real-time expenditure tracking</li>
+                <li>Atomic Nutrition Tracker uses Google's Gemini 2.0 Flash AI for free, while competitors charge for similar features</li>
+                <li>All apps support barcode scanning, but MyFitnessPal requires Premium subscription for this feature</li>
+                <li>Atomic Nutrition Tracker is the only option that is 100% free with no ads and full AI features</li>
+            </ul>
+        </div>
+
+        <div class="sources">
+            <h3>📚 Sources</h3>
+            <p><strong>MacroFactor Information:</strong></p>
+            <a href="https://outlift.com/macrofactor-review/" target="_blank">• Outlift: MacroFactor Review 2025</a>
+            <a href="https://macrofactorapp.com/annual-report-2025/" target="_blank">• MacroFactor 2025 Annual Report</a>
+            <a href="https://macrofactorapp.com/mm-oct-2025/" target="_blank">• MacroFactor Monthly: October 2025 Updates</a>
+            <a href="https://apps.apple.com/us/app/macrofactor-macro-tracker/id1553503471" target="_blank">• MacroFactor App Store Page</a>
+            <a href="https://dr-muscle.com/macrofactor-app-review/" target="_blank">• Dr. Muscle: Independent MacroFactor Review</a>
+
+            <p style="margin-top: 20px;"><strong>MyFitnessPal Information:</strong></p>
+            <a href="https://support.myfitnesspal.com/hc/en-us/articles/360032625951-What-are-the-features-of-MyFitnessPal-Premium" target="_blank">• MyFitnessPal Premium Features Official Page</a>
+            <a href="https://www.prnewswire.com/news-releases/myfitnesspal-unveils-its-2025-winter-release-302385598.html" target="_blank">• MyFitnessPal 2025 Winter Release Announcement</a>
+            <a href="https://blog.myfitnesspal.com/winter-release/" target="_blank">• MyFitnessPal Blog: 2025 Winter Release Details</a>
+            <a href="https://blog.myfitnesspal.com/myfitnesspal-membership-pricing-tiers/" target="_blank">• MyFitnessPal Premium+ Pricing & Features</a>
+            <a href="https://www.garagegymreviews.com/myfitnesspal-review" target="_blank">• Garage Gym Reviews: MyFitnessPal Review 2025</a>
+
+            <p style="margin-top: 20px;"><strong>Atomic Nutrition Tracker:</strong></p>
+            <a href="https://github.com/ryanburnhamelastic/atomic-nutrition-tracker" target="_blank">• GitHub Repository (Open Source)</a>
+            <a href="https://atomic-nutrition-tracker.netlify.app" target="_blank">• Live Application</a>
+        </div>
+
+        <footer style="background: #f9fafb; padding: 30px; text-align: center; color: #6b7280; border-top: 1px solid #e5e7eb;">
+            <p><strong>Atomic Nutrition Tracker</strong> | <a href="https://atomic-nutrition-tracker.netlify.app" style="color: #667eea; text-decoration: none;">Try it Free</a></p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">Last Updated: December 30, 2025 | Comparison based on publicly available information and feature testing</p>
+        </footer>
+    </div>
+</body>
+</html>
