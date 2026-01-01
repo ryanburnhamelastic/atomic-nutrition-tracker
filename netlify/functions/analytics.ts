@@ -85,6 +85,37 @@ const handler: Handler = async (event: HandlerEvent) => {
         ORDER BY date ASC
       `;
 
+      // Create a map of logged days for quick lookup
+      const loggedDaysMap = new Map();
+      dailyData.forEach((day: any) => {
+        loggedDaysMap.set(day.date, {
+          calories: Number(day.total_calories) || 0,
+          protein: Number(day.total_protein) || 0,
+          carbs: Number(day.total_carbs) || 0,
+          fat: Number(day.total_fat) || 0,
+        });
+      });
+
+      // Generate complete date range
+      const allDays = [];
+      const currentDate = new Date(startDate + 'T00:00:00');
+      const endDateObj = new Date(endDate + 'T00:00:00');
+
+      while (currentDate <= endDateObj) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const dayData = loggedDaysMap.get(dateStr);
+
+        allDays.push({
+          date: dateStr,
+          calories: dayData?.calories || 0,
+          protein: dayData?.protein || 0,
+          carbs: dayData?.carbs || 0,
+          fat: dayData?.fat || 0,
+        });
+
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
       // Calculate compliance metrics
       const proteinThreshold = Number(goals.protein_target) * 0.8;
       let compliantDays = 0;
@@ -92,17 +123,17 @@ const handler: Handler = async (event: HandlerEvent) => {
       let longestStreak = 0;
       let tempStreak = 0;
 
-      const dailyDataWithCompliance = dailyData.map((day: any, index: number) => {
-        const protein = Number(day.total_protein);
-        const calories = Number(day.total_calories);
-        const isCompliant = protein >= proteinThreshold && calories <= Number(goals.calorie_target);
+      const dailyDataWithCompliance = allDays.map((day: any, index: number) => {
+        const protein = Number(day.protein);
+        const calories = Number(day.calories);
+        const isCompliant = calories > 0 && protein >= proteinThreshold && calories <= Number(goals.calorie_target);
 
         if (isCompliant) {
           compliantDays++;
           tempStreak++;
           if (tempStreak > longestStreak) longestStreak = tempStreak;
           // If this is the most recent day or consecutive, update current streak
-          if (index === dailyData.length - 1 || index === dailyData.length - 2) {
+          if (index === allDays.length - 1 || index === allDays.length - 2) {
             currentStreak = tempStreak;
           }
         } else {
@@ -111,10 +142,10 @@ const handler: Handler = async (event: HandlerEvent) => {
 
         return {
           date: day.date,
-          calories: Number(day.total_calories),
-          protein: Number(day.total_protein),
-          carbs: Number(day.total_carbs),
-          fat: Number(day.total_fat),
+          calories: day.calories,
+          protein: day.protein,
+          carbs: day.carbs,
+          fat: day.fat,
           isCompliant,
         };
       });
@@ -167,7 +198,7 @@ const handler: Handler = async (event: HandlerEvent) => {
         })),
         dailyNutrition: dailyDataWithCompliance,
         compliance: {
-          totalDays: dailyData.length,
+          totalDays: dailyData.length, // Days with actual logged food
           compliantDays,
           complianceRate: dailyData.length > 0 ? Math.round((compliantDays / dailyData.length) * 100) : 0,
           currentStreak,
