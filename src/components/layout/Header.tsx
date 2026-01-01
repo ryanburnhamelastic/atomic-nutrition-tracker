@@ -31,6 +31,12 @@ export default function Header() {
               Add Food
             </Link>
             <Link
+              to="/my-foods"
+              className="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors"
+            >
+              My Foods
+            </Link>
+            <Link
               to="/analytics"
               className="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors"
             >
