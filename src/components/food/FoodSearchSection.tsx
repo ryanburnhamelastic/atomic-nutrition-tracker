@@ -106,14 +106,16 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
     ]);
 
     // Debug logging
-    console.log('Open Food Facts API response:', openFoodFactsResponse);
-    if (openFoodFactsResponse.error) {
-      console.error('Open Food Facts API error:', openFoodFactsResponse.error);
-    }
-    if (openFoodFactsResponse.data) {
-      console.log('Open Food Facts data:', JSON.stringify(openFoodFactsResponse.data, null, 2));
-      console.log('Open Food Facts foods count:', openFoodFactsResponse.data.foods?.length || 0);
-      console.log('Open Food Facts totalResults:', openFoodFactsResponse.data.totalResults);
+    console.log('[SEARCH DEBUG] Search query:', searchQuery);
+    console.log('[SEARCH DEBUG] Recent foods API response:', recentResponse);
+    if (recentResponse.data) {
+      console.log('[SEARCH DEBUG] Recent foods count:', recentResponse.data.length);
+      console.log('[SEARCH DEBUG] Recent foods:', recentResponse.data.map((f: RecentFood) => ({
+        name: f.name,
+        brand: f.brand,
+        frequency: f.frequency,
+        last_eaten: f.last_eaten
+      })));
     }
 
     const combinedResults: SearchResult[] = [];
@@ -139,11 +141,16 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
     // Add recent foods from all meals (filtered by search query)
     if (recentResponse.data) {
       const searchLower = searchQuery.toLowerCase();
+      console.log('[SEARCH DEBUG] Filtering recent foods with query:', searchLower);
+
       const matchingRecent = recentResponse.data
-        .filter((f: RecentFood) =>
-          f.name.toLowerCase().includes(searchLower) ||
-          f.brand?.toLowerCase().includes(searchLower)
-        )
+        .filter((f: RecentFood) => {
+          const nameMatch = f.name.toLowerCase().includes(searchLower);
+          const brandMatch = f.brand?.toLowerCase().includes(searchLower);
+          const matches = nameMatch || brandMatch;
+          console.log('[SEARCH DEBUG] Food:', f.name, 'Brand:', f.brand, 'Matches:', matches);
+          return matches;
+        })
         .map((f: RecentFood) => ({
           id: f.food_id || f.custom_food_id || `recent_${f.name}`,
           name: f.name,
@@ -162,6 +169,8 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
           last_servings: f.last_servings,
         }));
 
+      console.log('[SEARCH DEBUG] Matching recent foods:', matchingRecent.length);
+      console.log('[SEARCH DEBUG] Adding to results:', matchingRecent.map(f => f.name));
       combinedResults.push(...matchingRecent);
     }
 
