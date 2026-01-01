@@ -40,6 +40,8 @@ const handler: Handler = async (event: HandlerEvent) => {
       const limit = Math.min(Number(event.queryStringParameters?.limit) || 10, 20);
       const allMeals = event.queryStringParameters?.allMeals === 'true';
 
+      console.log('[RECENT FOODS] Request params:', { mealType, limit, allMeals, userId });
+
       // Validate meal type if provided and not requesting all meals
       const validMealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
       if (!allMeals && (!mealType || !validMealTypes.includes(mealType))) {
@@ -52,6 +54,7 @@ const handler: Handler = async (event: HandlerEvent) => {
 
       // Determine lookback period: 7 days for all meals, 30 days for specific meal
       const daysBack = allMeals ? 7 : 30;
+      console.log('[RECENT FOODS] Days back:', daysBack, 'All meals:', allMeals);
 
       // Query recent foods - optionally filtered by meal type
       // Group by food, sort by frequency and recency
@@ -191,6 +194,9 @@ const handler: Handler = async (event: HandlerEvent) => {
         ORDER BY frequency DESC, last_eaten DESC
         LIMIT ${limit}
       `;
+
+      console.log('[RECENT FOODS] Query results count:', recentFoods.length);
+      console.log('[RECENT FOODS] Query results:', JSON.stringify(recentFoods, null, 2));
 
       return {
         statusCode: 200,

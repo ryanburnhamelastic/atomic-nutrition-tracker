@@ -320,9 +320,18 @@ function RecentTab({ selectedDate, refreshSummary }: TabProps) {
 
   const loadRecent = useCallback(async () => {
     setLoading(true);
+    console.log('[MY FOODS] Loading recent foods...');
     const response = await recentFoodsApi.listAll(30);
+    console.log('[MY FOODS] Recent foods response:', response);
+    if (response.error) {
+      console.error('[MY FOODS] Recent foods error:', response.error);
+    }
     if (response.data) {
+      console.log('[MY FOODS] Recent foods count:', response.data.length);
+      console.log('[MY FOODS] Recent foods data:', response.data);
       setRecentFoods(response.data);
+    } else {
+      console.warn('[MY FOODS] No recent foods data returned');
     }
     setLoading(false);
   }, []);
