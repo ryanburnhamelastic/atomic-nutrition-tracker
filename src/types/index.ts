@@ -393,6 +393,8 @@ export interface AnalyticsData {
 export interface FavoriteFood extends Food {
   favorite_id: string;
   favorited_at: string;
+  food_id: string | null;
+  custom_food_id: string | null;
 }
 
 /**

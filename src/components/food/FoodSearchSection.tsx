@@ -243,7 +243,6 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
     // Allow favoriting local database foods and custom foods
     // For recent foods, use their underlying food_id or custom_food_id
     const isCustomFood = food.source === 'custom' || food.custom_food_id;
-    const isLocalFood = food.source === 'local' || food.food_id;
     const isRecentFood = food.source === 'recent';
 
     // Don't allow favoriting Open Food Facts foods
