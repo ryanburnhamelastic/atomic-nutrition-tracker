@@ -283,6 +283,8 @@ export interface RecentFood extends Food {
 export const recentFoodsApi = {
   list: (mealType: MealType, limit = 10) =>
     apiRequest<RecentFood[]>(`/recent-foods?mealType=${mealType}&limit=${limit}`),
+  listAll: (limit = 20) =>
+    apiRequest<RecentFood[]>(`/recent-foods?allMeals=true&limit=${limit}`),
 };
 
 /**
@@ -348,15 +350,19 @@ export const analyticsApi = {
  */
 export const favoriteFoodsApi = {
   list: () => apiRequest<FavoriteFood[]>('/favorite-foods'),
-  add: (foodId: string) =>
-    apiRequest<{ id: string; user_id: string; food_id: string; created_at: string }>('/favorite-foods', {
+  add: (foodId?: string, customFoodId?: string) =>
+    apiRequest<{ id: string; user_id: string; food_id: string | null; custom_food_id: string | null; created_at: string }>('/favorite-foods', {
       method: 'POST',
-      body: JSON.stringify({ foodId }),
+      body: JSON.stringify({ foodId, customFoodId }),
     }),
-  remove: (foodId: string) =>
-    apiRequest<{ message: string }>(`/favorite-foods/${foodId}`, {
+  remove: (foodId?: string, customFoodId?: string) => {
+    const params = new URLSearchParams();
+    if (foodId) params.append('foodId', foodId);
+    if (customFoodId) params.append('customFoodId', customFoodId);
+    return apiRequest<{ message: string }>(`/favorite-foods?${params.toString()}`, {
       method: 'DELETE',
-    }),
+    });
+  },
 };
 
 /**

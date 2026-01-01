@@ -34,23 +34,26 @@ const handler: Handler = async (event: HandlerEvent) => {
 
     const userId = users[0].id;
 
-    // GET - List user's favorite foods with full food details
+    // GET - List user's favorite foods with full food details (both regular and custom)
     if (event.httpMethod === 'GET') {
       const favorites = await sql`
         SELECT
           ff.id as favorite_id,
-          f.id,
-          f.name,
-          f.brand,
-          f.serving_size,
-          f.serving_unit,
-          f.calories,
-          f.protein,
-          f.carbs,
-          f.fat,
+          COALESCE(f.id, cf.id) as id,
+          COALESCE(f.name, cf.name) as name,
+          COALESCE(f.brand, cf.brand) as brand,
+          COALESCE(f.serving_size, cf.serving_size) as serving_size,
+          COALESCE(f.serving_unit, cf.serving_unit) as serving_unit,
+          COALESCE(f.calories, cf.calories) as calories,
+          COALESCE(f.protein, cf.protein) as protein,
+          COALESCE(f.carbs, cf.carbs) as carbs,
+          COALESCE(f.fat, cf.fat) as fat,
+          ff.food_id,
+          ff.custom_food_id,
           ff.created_at as favorited_at
         FROM favorite_foods ff
-        JOIN foods f ON ff.food_id = f.id
+        LEFT JOIN foods f ON ff.food_id = f.id
+        LEFT JOIN custom_foods cf ON ff.custom_food_id = cf.id
         WHERE ff.user_id = ${userId}
         ORDER BY ff.created_at DESC
       `;
@@ -62,24 +65,29 @@ const handler: Handler = async (event: HandlerEvent) => {
       };
     }
 
-    // POST - Add food to favorites
+    // POST - Add food to favorites (regular or custom)
     if (event.httpMethod === 'POST') {
       const body = JSON.parse(event.body || '{}');
-      const { foodId } = body;
+      const { foodId, customFoodId } = body;
 
-      if (!foodId) {
+      if (!foodId && !customFoodId) {
         return {
           statusCode: 400,
           headers: corsHeaders,
-          body: JSON.stringify({ error: 'foodId is required' }),
+          body: JSON.stringify({ error: 'Either foodId or customFoodId is required' }),
         };
       }
 
       // Check if already favorited
-      const existing = await sql`
-        SELECT id FROM favorite_foods
-        WHERE user_id = ${userId} AND food_id = ${foodId}
-      `;
+      const existing = foodId
+        ? await sql`
+            SELECT id FROM favorite_foods
+            WHERE user_id = ${userId} AND food_id = ${foodId}
+          `
+        : await sql`
+            SELECT id FROM favorite_foods
+            WHERE user_id = ${userId} AND custom_food_id = ${customFoodId}
+          `;
 
       if (existing.length > 0) {
         return {
@@ -90,11 +98,17 @@ const handler: Handler = async (event: HandlerEvent) => {
       }
 
       // Add to favorites
-      const favorite = await sql`
-        INSERT INTO favorite_foods (user_id, food_id)
-        VALUES (${userId}, ${foodId})
-        RETURNING id, user_id, food_id, created_at
-      `;
+      const favorite = foodId
+        ? await sql`
+            INSERT INTO favorite_foods (user_id, food_id)
+            VALUES (${userId}, ${foodId})
+            RETURNING id, user_id, food_id, custom_food_id, created_at
+          `
+        : await sql`
+            INSERT INTO favorite_foods (user_id, custom_food_id)
+            VALUES (${userId}, ${customFoodId})
+            RETURNING id, user_id, food_id, custom_food_id, created_at
+          `;
 
       return {
         statusCode: 201,
@@ -103,22 +117,30 @@ const handler: Handler = async (event: HandlerEvent) => {
       };
     }
 
-    // DELETE - Remove food from favorites
+    // DELETE - Remove food from favorites (regular or custom)
     if (event.httpMethod === 'DELETE') {
-      const foodId = event.path.split('/').pop();
+      const foodId = event.queryStringParameters?.foodId;
+      const customFoodId = event.queryStringParameters?.customFoodId;
 
-      if (!foodId) {
+      if (!foodId && !customFoodId) {
         return {
           statusCode: 400,
           headers: corsHeaders,
-          body: JSON.stringify({ error: 'Food ID is required' }),
+          body: JSON.stringify({ error: 'Either foodId or customFoodId query parameter is required' }),
         };
       }
 
-      await sql`
-        DELETE FROM favorite_foods
-        WHERE user_id = ${userId} AND food_id = ${foodId}
-      `;
+      if (foodId) {
+        await sql`
+          DELETE FROM favorite_foods
+          WHERE user_id = ${userId} AND food_id = ${foodId}
+        `;
+      } else {
+        await sql`
+          DELETE FROM favorite_foods
+          WHERE user_id = ${userId} AND custom_food_id = ${customFoodId}
+        `;
+      }
 
       return {
         statusCode: 200,

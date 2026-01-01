@@ -34,24 +34,95 @@ const handler: Handler = async (event: HandlerEvent) => {
 
     const userId = users[0].id;
 
-    // GET - Get recent foods for a specific meal type
+    // GET - Get recent foods for a specific meal type or all meals
     if (event.httpMethod === 'GET') {
       const mealType = event.queryStringParameters?.mealType;
       const limit = Math.min(Number(event.queryStringParameters?.limit) || 10, 20);
+      const allMeals = event.queryStringParameters?.allMeals === 'true';
 
-      // Validate meal type
+      // Validate meal type if provided and not requesting all meals
       const validMealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
-      if (!mealType || !validMealTypes.includes(mealType)) {
+      if (!allMeals && (!mealType || !validMealTypes.includes(mealType))) {
         return {
           statusCode: 400,
           headers: corsHeaders,
-          body: JSON.stringify({ error: 'Valid mealType parameter is required (breakfast, lunch, dinner, snack)' }),
+          body: JSON.stringify({ error: 'Valid mealType parameter is required (breakfast, lunch, dinner, snack) or set allMeals=true' }),
         };
       }
 
-      // Query recent foods for this meal type
-      // Look back 30 days, group by food, sort by frequency and recency
-      const recentFoods = await sql`
+      // Determine lookback period: 7 days for all meals, 30 days for specific meal
+      const daysBack = allMeals ? 7 : 30;
+
+      // Query recent foods - optionally filtered by meal type
+      // Group by food, sort by frequency and recency
+      const recentFoods = allMeals ? await sql`
+        WITH recent_entries AS (
+          SELECT
+            name,
+            serving_size,
+            serving_unit,
+            calories,
+            protein,
+            carbs,
+            fat,
+            food_id,
+            custom_food_id,
+            servings,
+            date,
+            created_at
+          FROM food_entries
+          WHERE user_id = ${userId}
+            AND date >= CURRENT_DATE - INTERVAL '7 days'
+        ),
+        food_stats AS (
+          SELECT
+            name,
+            serving_size,
+            serving_unit,
+            calories,
+            protein,
+            carbs,
+            fat,
+            food_id,
+            custom_food_id,
+            COUNT(*) as frequency,
+            MAX(date) as last_eaten,
+            (
+              SELECT servings
+              FROM recent_entries re2
+              WHERE re2.name = recent_entries.name
+                AND re2.serving_size = recent_entries.serving_size
+                AND re2.serving_unit = recent_entries.serving_unit
+                AND re2.calories = recent_entries.calories
+                AND re2.protein = recent_entries.protein
+                AND re2.carbs = recent_entries.carbs
+                AND re2.fat = recent_entries.fat
+                AND COALESCE(re2.food_id, '') = COALESCE(recent_entries.food_id, '')
+                AND COALESCE(re2.custom_food_id, '') = COALESCE(recent_entries.custom_food_id, '')
+              ORDER BY re2.date DESC, re2.created_at DESC
+              LIMIT 1
+            ) as last_servings
+          FROM recent_entries
+          GROUP BY name, serving_size, serving_unit, calories, protein, carbs, fat, food_id, custom_food_id
+        )
+        SELECT
+          name,
+          serving_size,
+          serving_unit,
+          calories,
+          protein,
+          carbs,
+          fat,
+          food_id,
+          custom_food_id,
+          NULL::text as brand,
+          frequency,
+          last_eaten,
+          last_servings
+        FROM food_stats
+        ORDER BY frequency DESC, last_eaten DESC
+        LIMIT ${limit}
+      ` : await sql`
         WITH recent_entries AS (
           SELECT
             name,

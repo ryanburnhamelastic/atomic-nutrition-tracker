@@ -173,7 +173,7 @@ export async function initDb(): Promise<void> {
     ALTER TABLE weight_entries ADD COLUMN IF NOT EXISTS trend_weight DECIMAL(5,2)
   `;
 
-  // Favorite foods (user's favorited base foods for quick add)
+  // Favorite foods (user's favorited base foods and custom foods for quick add)
   await sql`
     CREATE TABLE IF NOT EXISTS favorite_foods (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -182,6 +182,39 @@ export async function initDb(): Promise<void> {
       created_at TIMESTAMPTZ DEFAULT NOW(),
       UNIQUE(user_id, food_id)
     )
+  `;
+
+  // Add custom_food_id column if it doesn't exist
+  await sql`
+    ALTER TABLE favorite_foods ADD COLUMN IF NOT EXISTS custom_food_id UUID REFERENCES custom_foods(id) ON DELETE CASCADE
+  `;
+
+  // Drop old unique constraint and create new composite one that handles both food types
+  // Note: This will only work if there are no conflicts
+  await sql`
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'favorite_foods_user_id_food_id_key'
+      ) THEN
+        ALTER TABLE favorite_foods DROP CONSTRAINT favorite_foods_user_id_food_id_key;
+      END IF;
+    END $$
+  `;
+
+  // Create unique constraint that ensures user can't favorite the same food twice
+  // Either through food_id or custom_food_id
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_favorite_foods_user_food
+    ON favorite_foods(user_id, food_id)
+    WHERE food_id IS NOT NULL
+  `;
+
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_favorite_foods_user_custom_food
+    ON favorite_foods(user_id, custom_food_id)
+    WHERE custom_food_id IS NOT NULL
   `;
 
   await sql`

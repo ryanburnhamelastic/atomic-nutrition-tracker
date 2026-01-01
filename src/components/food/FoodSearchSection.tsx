@@ -43,6 +43,7 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
   const [recentFoods, setRecentFoods] = useState<SearchResult[]>([]);
   const [favoriting, setFavoriting] = useState<string | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [favoriteCustomIds, setFavoriteCustomIds] = useState<Set<string>>(new Set());
   const [selectedRecentIds, setSelectedRecentIds] = useState<Set<string>>(new Set());
   const [multiAdding, setMultiAdding] = useState(false);
 
@@ -76,11 +77,18 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
   const loadFavorites = useCallback(async () => {
     const response = await favoriteFoodsApi.list();
     if (response.data) {
-      setFavoriteIds(new Set(response.data.map(f => f.id)));
+      const foodIds = response.data
+        .filter(f => f.food_id)
+        .map(f => f.id);
+      const customIds = response.data
+        .filter(f => f.custom_food_id)
+        .map(f => f.id);
+      setFavoriteIds(new Set(foodIds));
+      setFavoriteCustomIds(new Set(customIds));
     }
   }, []);
 
-  // Debounced search - searches custom foods, local database, and Open Food Facts
+  // Debounced search - searches custom foods, local database, recent foods, and Open Food Facts
   const searchFoods = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults([]);
@@ -89,10 +97,11 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
 
     setLoading(true);
 
-    // Search all sources in parallel
-    const [customResponse, localResponse, openFoodFactsResponse] = await Promise.all([
+    // Search all sources in parallel, including recent foods from all meals (last 7 days)
+    const [customResponse, localResponse, recentResponse, openFoodFactsResponse] = await Promise.all([
       customFoodsApi.list(searchQuery),
       foodsApi.search(searchQuery, 15),
+      recentFoodsApi.listAll(20), // Get recent foods from all meals
       openFoodFactsApi.search(searchQuery, 15),
     ]);
 
@@ -125,6 +134,35 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
           source: 'custom' as FoodSource,
         }))
       );
+    }
+
+    // Add recent foods from all meals (filtered by search query)
+    if (recentResponse.data) {
+      const searchLower = searchQuery.toLowerCase();
+      const matchingRecent = recentResponse.data
+        .filter((f: RecentFood) =>
+          f.name.toLowerCase().includes(searchLower) ||
+          f.brand?.toLowerCase().includes(searchLower)
+        )
+        .map((f: RecentFood) => ({
+          id: f.food_id || f.custom_food_id || `recent_${f.name}`,
+          name: f.name,
+          brand: f.brand,
+          serving_size: f.serving_size,
+          serving_unit: f.serving_unit,
+          calories: f.calories,
+          protein: f.protein,
+          carbs: f.carbs,
+          fat: f.fat,
+          source: 'recent' as FoodSource,
+          food_id: f.food_id,
+          custom_food_id: f.custom_food_id,
+          frequency: f.frequency,
+          last_eaten: f.last_eaten,
+          last_servings: f.last_servings,
+        }));
+
+      combinedResults.push(...matchingRecent);
     }
 
     // Add local database foods
@@ -202,28 +240,61 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
   const handleToggleFavorite = async (food: SearchResult, e: React.MouseEvent) => {
     e.stopPropagation();
 
-    // Only allow favoriting from local database (not custom, Open Food Facts, or recent)
-    if (food.source !== 'local') {
+    // Allow favoriting local database foods and custom foods
+    // For recent foods, use their underlying food_id or custom_food_id
+    const isCustomFood = food.source === 'custom' || food.custom_food_id;
+    const isLocalFood = food.source === 'local' || food.food_id;
+    const isRecentFood = food.source === 'recent';
+
+    // Don't allow favoriting Open Food Facts foods
+    if (food.source === 'openfoodfacts') {
       return;
+    }
+
+    // For recent foods, we need to check if they have an underlying food_id or custom_food_id
+    if (isRecentFood && !food.food_id && !food.custom_food_id) {
+      return; // Can't favorite recent foods without a database reference
     }
 
     setFavoriting(food.id);
 
-    const isFavorited = favoriteIds.has(food.id);
+    const isFavorited = isCustomFood
+      ? favoriteCustomIds.has(food.custom_food_id || food.id)
+      : favoriteIds.has(food.food_id || food.id);
 
     if (isFavorited) {
-      const response = await favoriteFoodsApi.remove(food.id);
+      // Remove from favorites
+      const response = isCustomFood
+        ? await favoriteFoodsApi.remove(undefined, food.custom_food_id || food.id)
+        : await favoriteFoodsApi.remove(food.food_id || food.id);
+
       if (!response.error) {
-        setFavoriteIds(prev => {
-          const next = new Set(prev);
-          next.delete(food.id);
-          return next;
-        });
+        if (isCustomFood) {
+          setFavoriteCustomIds(prev => {
+            const next = new Set(prev);
+            next.delete(food.custom_food_id || food.id);
+            return next;
+          });
+        } else {
+          setFavoriteIds(prev => {
+            const next = new Set(prev);
+            next.delete(food.food_id || food.id);
+            return next;
+          });
+        }
       }
     } else {
-      const response = await favoriteFoodsApi.add(food.id);
+      // Add to favorites
+      const response = isCustomFood
+        ? await favoriteFoodsApi.add(undefined, food.custom_food_id || food.id)
+        : await favoriteFoodsApi.add(food.food_id || food.id);
+
       if (!response.error) {
-        setFavoriteIds(prev => new Set(prev).add(food.id));
+        if (isCustomFood) {
+          setFavoriteCustomIds(prev => new Set(prev).add(food.custom_food_id || food.id));
+        } else {
+          setFavoriteIds(prev => new Set(prev).add(food.food_id || food.id));
+        }
       }
     }
 
@@ -571,7 +642,11 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
                     <div className="flex-1 min-w-0" onClick={() => handleSelectFood(food)} role="button" tabIndex={0}>
                       <FoodResultRow
                         food={food}
-                        isFavorited={favoriteIds.has(food.id)}
+                        isFavorited={
+                          (food.custom_food_id || food.source === 'custom')
+                            ? favoriteCustomIds.has(food.custom_food_id || food.id)
+                            : favoriteIds.has(food.food_id || food.id)
+                        }
                         favoriting={favoriting === food.id}
                         onSelect={handleSelectFood}
                         onToggleFavorite={handleToggleFavorite}
@@ -596,7 +671,11 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
                   <FoodResultRow
                     key={food.id}
                     food={food}
-                    isFavorited={favoriteIds.has(food.id)}
+                    isFavorited={
+                      (food.custom_food_id || food.source === 'custom')
+                        ? favoriteCustomIds.has(food.custom_food_id || food.id)
+                        : favoriteIds.has(food.food_id || food.id)
+                    }
                     favoriting={favoriting === food.id}
                     onSelect={handleSelectFood}
                     onToggleFavorite={handleToggleFavorite}
@@ -633,6 +712,10 @@ interface FoodResultRowProps {
 }
 
 function FoodResultRow({ food, isFavorited, favoriting, onSelect, onToggleFavorite }: FoodResultRowProps) {
+  // Show favorite button for local, custom, and recent foods (but not Open Food Facts)
+  const canFavorite = food.source !== 'openfoodfacts' &&
+    (food.source === 'recent' ? (food.food_id || food.custom_food_id) : true);
+
   return (
     <div className="flex items-center justify-between py-3">
       <div className="flex-1 min-w-0">
@@ -666,8 +749,8 @@ function FoodResultRow({ food, isFavorited, favoriting, onSelect, onToggleFavori
         </p>
       </div>
       <div className="flex items-center gap-2 ml-3">
-        {/* Favorite button - only for local database foods */}
-        {food.source === 'local' && (
+        {/* Favorite button - for local, custom, and recent foods (not Open Food Facts) */}
+        {canFavorite && (
           <button
             onClick={(e) => onToggleFavorite(food, e)}
             disabled={favoriting}
