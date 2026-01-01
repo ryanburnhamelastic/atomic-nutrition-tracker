@@ -100,8 +100,8 @@ const handler: Handler = async (event: HandlerEvent) => {
                 AND re2.protein = recent_entries.protein
                 AND re2.carbs = recent_entries.carbs
                 AND re2.fat = recent_entries.fat
-                AND COALESCE(re2.food_id, '') = COALESCE(recent_entries.food_id, '')
-                AND COALESCE(re2.custom_food_id, '') = COALESCE(recent_entries.custom_food_id, '')
+                AND re2.food_id IS NOT DISTINCT FROM recent_entries.food_id
+                AND re2.custom_food_id IS NOT DISTINCT FROM recent_entries.custom_food_id
               ORDER BY re2.date DESC, re2.created_at DESC
               LIMIT 1
             ) as last_servings
@@ -168,8 +168,8 @@ const handler: Handler = async (event: HandlerEvent) => {
                 AND re2.protein = recent_entries.protein
                 AND re2.carbs = recent_entries.carbs
                 AND re2.fat = recent_entries.fat
-                AND COALESCE(re2.food_id, '') = COALESCE(recent_entries.food_id, '')
-                AND COALESCE(re2.custom_food_id, '') = COALESCE(recent_entries.custom_food_id, '')
+                AND re2.food_id IS NOT DISTINCT FROM recent_entries.food_id
+                AND re2.custom_food_id IS NOT DISTINCT FROM recent_entries.custom_food_id
               ORDER BY re2.date DESC, re2.created_at DESC
               LIMIT 1
             ) as last_servings
