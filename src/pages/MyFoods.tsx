@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { customFoodsApi, favoriteFoodsApi, recentFoodsApi, foodEntriesApi } from '../lib/api';
+import { customFoodsApi, favoriteFoodsApi, recentFoodsApi, foodEntriesApi, userStatsApi } from '../lib/api';
 import { CustomFood, CreateCustomFoodInput, FavoriteFood, RecentFood } from '../types';
 import { useNutrition } from '../contexts/NutritionContext';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -128,6 +128,9 @@ function FavoritesTab({ selectedDate, refreshSummary }: TabProps) {
     setAdding(false);
 
     if (!response.error) {
+      // Update user stats and check for achievements
+      await userStatsApi.update();
+
       setSelectedFood(null);
       setServings('1');
       await refreshSummary();
@@ -368,6 +371,9 @@ function RecentTab({ selectedDate, refreshSummary }: TabProps) {
     setAdding(false);
 
     if (!response.error) {
+      // Update user stats and check for achievements
+      await userStatsApi.update();
+
       setSelectedFood(null);
       setServings('1');
       await refreshSummary();

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CustomFood, Food, MealType, RecentFood } from '../../types';
-import { customFoodsApi, foodsApi, openFoodFactsApi, recentFoodsApi, favoriteFoodsApi, foodEntriesApi } from '../../lib/api';
+import { customFoodsApi, foodsApi, openFoodFactsApi, recentFoodsApi, favoriteFoodsApi, foodEntriesApi, userStatsApi } from '../../lib/api';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 // Source type for search results
@@ -355,6 +355,9 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
     setInputMode('servings');
 
     if (!response.error) {
+      // Update user stats and check for achievements
+      await userStatsApi.update();
+
       // Reload recent foods since we just added a food
       loadRecentFoods();
       onSuccess();
@@ -413,6 +416,9 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
         });
       })
     );
+
+    // Update user stats after adding multiple foods
+    await userStatsApi.update();
 
     setMultiAdding(false);
     setSelectedRecentIds(new Set());
