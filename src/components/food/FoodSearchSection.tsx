@@ -440,6 +440,15 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
     fat: Math.round(selectedFood.fat * servingCount * 10) / 10,
   } : null;
 
+  // Calculate total nutrition for multi-selected recent foods
+  const selectedFoodsList = recentFoods.filter(f => selectedRecentIds.has(f.id));
+  const multiSelectTotals = selectedFoodsList.reduce((totals, food) => ({
+    calories: totals.calories + (food.calories * (food.last_servings || 1)),
+    protein: totals.protein + (food.protein * (food.last_servings || 1)),
+    carbs: totals.carbs + (food.carbs * (food.last_servings || 1)),
+    fat: totals.fat + (food.fat * (food.last_servings || 1)),
+  }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
   return (
     <div className="card">
       <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -628,20 +637,25 @@ export default function FoodSearchSection({ date, mealType, onSuccess }: FoodSea
                   </h3>
                 </div>
                 {selectedRecentIds.size > 0 && (
-                  <button
-                    onClick={handleMultiAdd}
-                    disabled={multiAdding}
-                    className="text-sm px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1"
-                  >
-                    {multiAdding ? (
-                      <>
-                        <LoadingSpinner size="sm" />
-                        Adding {selectedRecentIds.size}...
-                      </>
-                    ) : (
-                      `Add ${selectedRecentIds.size} Selected`
-                    )}
-                  </button>
+                  <div className="flex flex-col items-end gap-1">
+                    <button
+                      onClick={handleMultiAdd}
+                      disabled={multiAdding}
+                      className="text-sm px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1"
+                    >
+                      {multiAdding ? (
+                        <>
+                          <LoadingSpinner size="sm" />
+                          Adding {selectedRecentIds.size}...
+                        </>
+                      ) : (
+                        `Add ${selectedRecentIds.size} Selected`
+                      )}
+                    </button>
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
+                      {Math.round(multiSelectTotals.calories)} cal • {Math.round(multiSelectTotals.protein)}p • {Math.round(multiSelectTotals.carbs)}c • {Math.round(multiSelectTotals.fat)}f
+                    </span>
+                  </div>
                 )}
               </div>
               <div className="divide-y divide-gray-100 dark:divide-gray-700">

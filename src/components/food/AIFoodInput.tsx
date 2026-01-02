@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { GeminiFood, MealType } from '../../types';
-import { geminiApi, foodEntriesApi } from '../../lib/api';
+import { geminiApi, foodEntriesApi, userStatsApi } from '../../lib/api';
 import { useNutrition } from '../../contexts/NutritionContext';
 import LoadingSpinner from '../common/LoadingSpinner';
 
@@ -123,6 +123,9 @@ export default function AIFoodInput({ date, mealType, onSuccess }: AIFoodInputPr
     setAddingIndex(null);
 
     if (!response.error) {
+      // Update user stats and check for achievements
+      await userStatsApi.update();
+
       // Remove from results
       setResults(prev => prev.filter((_, i) => i !== index));
       onSuccess();
@@ -147,6 +150,9 @@ export default function AIFoodInput({ date, mealType, onSuccess }: AIFoodInputPr
         fat: food.fat,
       });
     }
+
+    // Update user stats after adding all foods
+    await userStatsApi.update();
 
     setResults([]);
     setTextInput('');
@@ -278,9 +284,17 @@ export default function AIFoodInput({ date, mealType, onSuccess }: AIFoodInputPr
       {results.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Found {results.length} food{results.length > 1 ? 's' : ''}
-            </p>
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Found {results.length} food{results.length > 1 ? 's' : ''}
+              </p>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                Total: {Math.round(results.reduce((sum, f) => sum + f.calories, 0))} cal • {' '}
+                {Math.round(results.reduce((sum, f) => sum + f.protein, 0))}p • {' '}
+                {Math.round(results.reduce((sum, f) => sum + f.carbs, 0))}c • {' '}
+                {Math.round(results.reduce((sum, f) => sum + f.fat, 0))}f
+              </p>
+            </div>
             <div className="flex gap-2">
               <button
                 onClick={handleClear}
