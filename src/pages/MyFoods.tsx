@@ -320,6 +320,19 @@ function RecentTab({ selectedDate, refreshSummary }: TabProps) {
   const [servings, setServings] = useState('1');
   const [mealType, setMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('lunch');
   const [adding, setAdding] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [favoriteCustomIds, setFavoriteCustomIds] = useState<Set<string>>(new Set());
+  const [favoritingId, setFavoritingId] = useState<string | null>(null);
+
+  const loadFavorites = useCallback(async () => {
+    const response = await favoriteFoodsApi.list();
+    if (response.data) {
+      const foodIds = response.data.filter(f => f.food_id).map(f => f.id);
+      const customIds = response.data.filter(f => f.custom_food_id).map(f => f.id);
+      setFavoriteIds(new Set(foodIds));
+      setFavoriteCustomIds(new Set(customIds));
+    }
+  }, []);
 
   const loadRecent = useCallback(async () => {
     setLoading(true);
@@ -341,7 +354,54 @@ function RecentTab({ selectedDate, refreshSummary }: TabProps) {
 
   useEffect(() => {
     loadRecent();
-  }, [loadRecent]);
+    loadFavorites();
+  }, [loadRecent, loadFavorites]);
+
+  const handleToggleFavorite = async (food: RecentFood, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+
+    const isCustomFood = !!food.custom_food_id;
+    const foodKey = isCustomFood ? (food.custom_food_id || food.id) : (food.food_id || food.id);
+    const isFavorited = isCustomFood ? favoriteCustomIds.has(foodKey) : favoriteIds.has(foodKey);
+
+    setFavoritingId(foodKey);
+
+    if (isFavorited) {
+      const response = isCustomFood
+        ? await favoriteFoodsApi.remove(undefined, foodKey)
+        : await favoriteFoodsApi.remove(foodKey);
+
+      if (!response.error) {
+        if (isCustomFood) {
+          setFavoriteCustomIds(prev => {
+            const next = new Set(prev);
+            next.delete(foodKey);
+            return next;
+          });
+        } else {
+          setFavoriteIds(prev => {
+            const next = new Set(prev);
+            next.delete(foodKey);
+            return next;
+          });
+        }
+      }
+    } else {
+      const response = isCustomFood
+        ? await favoriteFoodsApi.add(undefined, foodKey)
+        : await favoriteFoodsApi.add(foodKey);
+
+      if (!response.error) {
+        if (isCustomFood) {
+          setFavoriteCustomIds(prev => new Set(prev).add(foodKey));
+        } else {
+          setFavoriteIds(prev => new Set(prev).add(foodKey));
+        }
+      }
+    }
+
+    setFavoritingId(null);
+  };
 
   const handleAddFood = async () => {
     if (!selectedFood) return;
@@ -513,34 +573,64 @@ function RecentTab({ selectedDate, refreshSummary }: TabProps) {
 
       {/* Recent Foods List */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {recentFoods.map((food, index) => (
-          <div
-            key={`${food.name}-${index}`}
-            className="card cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => {
-              setSelectedFood(food);
-              setServings(food.last_servings ? String(food.last_servings) : '1');
-            }}
-          >
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-900 dark:text-white truncate">
-                    {food.name}
-                  </p>
-                  {food.frequency && food.frequency > 1 && (
-                    <span className="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 rounded flex-shrink-0">
-                      {food.frequency}x
-                    </span>
+        {recentFoods.map((food, index) => {
+          const isCustomFood = !!food.custom_food_id;
+          const foodKey = isCustomFood ? (food.custom_food_id || food.id) : (food.food_id || food.id);
+          const isFavorited = isCustomFood ? favoriteCustomIds.has(foodKey) : favoriteIds.has(foodKey);
+
+          return (
+            <div
+              key={`${food.name}-${index}`}
+              className="card cursor-pointer hover:shadow-md transition-shadow relative"
+              onClick={() => {
+                setSelectedFood(food);
+                setServings(food.last_servings ? String(food.last_servings) : '1');
+              }}
+            >
+              {/* Favorite Button */}
+              <button
+                onClick={(e) => handleToggleFavorite(food, e)}
+                disabled={favoritingId === foodKey}
+                className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                <svg
+                  className={`w-5 h-5 ${
+                    isFavorited
+                      ? 'fill-amber-400 text-amber-400'
+                      : 'fill-none text-gray-400 dark:text-gray-500'
+                  }`}
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                  />
+                </svg>
+              </button>
+
+              <div className="flex items-start justify-between mb-2 pr-8">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-900 dark:text-white truncate">
+                      {food.name}
+                    </p>
+                    {food.frequency && food.frequency > 1 && (
+                      <span className="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 rounded flex-shrink-0">
+                        {food.frequency}x
+                      </span>
+                    )}
+                  </div>
+                  {food.brand && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                      {food.brand}
+                    </p>
                   )}
                 </div>
-                {food.brand && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                    {food.brand}
-                  </p>
-                )}
               </div>
-            </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
               {food.serving_size} {food.serving_unit} • {food.calories} cal
             </p>
@@ -554,8 +644,9 @@ function RecentTab({ selectedDate, refreshSummary }: TabProps) {
                 Last: {new Date(food.last_eaten).toLocaleDateString()}
               </p>
             )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
