@@ -8,7 +8,7 @@ type TabType = 'custom' | 'favorites' | 'recent';
 
 export default function MyFoods() {
   const [activeTab, setActiveTab] = useState<TabType>('favorites');
-  const { selectedDate, refreshSummary } = useNutrition();
+  const { selectedDate, refreshSummary, refreshStats } = useNutrition();
 
   return (
     <div className="space-y-6">
@@ -56,8 +56,8 @@ export default function MyFoods() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'favorites' && <FavoritesTab selectedDate={selectedDate} refreshSummary={refreshSummary} />}
-      {activeTab === 'recent' && <RecentTab selectedDate={selectedDate} refreshSummary={refreshSummary} />}
+      {activeTab === 'favorites' && <FavoritesTab selectedDate={selectedDate} refreshSummary={refreshSummary} refreshStats={refreshStats} />}
+      {activeTab === 'recent' && <RecentTab selectedDate={selectedDate} refreshSummary={refreshSummary} refreshStats={refreshStats} />}
       {activeTab === 'custom' && <CustomFoodsTab />}
     </div>
   );
@@ -67,9 +67,10 @@ export default function MyFoods() {
 interface TabProps {
   selectedDate: string;
   refreshSummary: () => Promise<void>;
+  refreshStats: () => Promise<void>;
 }
 
-function FavoritesTab({ selectedDate, refreshSummary }: TabProps) {
+function FavoritesTab({ selectedDate, refreshSummary, refreshStats }: TabProps) {
   const [favorites, setFavorites] = useState<FavoriteFood[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFood, setSelectedFood] = useState<FavoriteFood | null>(null);
@@ -134,6 +135,7 @@ function FavoritesTab({ selectedDate, refreshSummary }: TabProps) {
       setSelectedFood(null);
       setServings('1');
       await refreshSummary();
+      await refreshStats();
     }
   };
 
@@ -313,7 +315,7 @@ function FavoritesTab({ selectedDate, refreshSummary }: TabProps) {
 }
 
 // Recent Tab
-function RecentTab({ selectedDate, refreshSummary }: TabProps) {
+function RecentTab({ selectedDate, refreshSummary, refreshStats }: TabProps) {
   const [recentFoods, setRecentFoods] = useState<RecentFood[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFood, setSelectedFood] = useState<RecentFood | null>(null);
@@ -437,6 +439,7 @@ function RecentTab({ selectedDate, refreshSummary }: TabProps) {
       setSelectedFood(null);
       setServings('1');
       await refreshSummary();
+      await refreshStats();
     }
   };
 

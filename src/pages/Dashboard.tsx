@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useNutrition } from '../contexts/NutritionContext';
-import { foodEntriesApi, userStatsApi, userProgramsApi, weightEntriesApi, programReviewsApi } from '../lib/api';
+import { foodEntriesApi, userProgramsApi, weightEntriesApi, programReviewsApi } from '../lib/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import DailyProgress from '../components/nutrition/DailyProgress';
 import MealSection from '../components/nutrition/MealSection';
@@ -16,7 +16,7 @@ import ProgramReviewModal from '../components/programs/ProgramReviewModal';
 import MealPlannerFAB from '../components/common/MealPlannerFAB';
 import MealPlannerModal from '../components/food/MealPlannerModal';
 import { getTodayDate } from '../lib/timeHelpers';
-import { FoodEntry, MealType, UserStats, UserProgram, ProgramReview } from '../types';
+import { FoodEntry, MealType, UserProgram, ProgramReview } from '../types';
 
 // Helper to format date for display
 function formatDate(dateString: string): string {
@@ -57,6 +57,9 @@ export default function Dashboard() {
     dailySummary,
     summaryLoading,
     refreshSummary,
+    userStats,
+    statsLoading,
+    refreshStats,
   } = useNutrition();
 
   // Refresh data when returning from food logging
@@ -64,14 +67,11 @@ export default function Dashboard() {
     const state = location.state as { refreshData?: boolean } | null;
     if (state?.refreshData) {
       refreshSummary();
+      refreshStats();
       // Clear the state to avoid refreshing on every render
       window.history.replaceState({}, document.title);
     }
-  }, [location, refreshSummary]);
-
-  // User stats for streaks and achievements
-  const [userStats, setUserStats] = useState<UserStats | null>(null);
-  const [statsLoading, setStatsLoading] = useState(true);
+  }, [location, refreshSummary, refreshStats]);
 
   // Program state
   const [activeProgram, setActiveProgram] = useState<UserProgram | null>(null);
@@ -87,20 +87,6 @@ export default function Dashboard() {
 
   // Meal planner state
   const [showMealPlanner, setShowMealPlanner] = useState(false);
-
-  // Load user stats
-  useEffect(() => {
-    loadUserStats();
-  }, []);
-
-  const loadUserStats = async () => {
-    setStatsLoading(true);
-    const response = await userStatsApi.get();
-    if (response.data) {
-      setUserStats(response.data);
-    }
-    setStatsLoading(false);
-  };
 
   // Load active program and current weight
   useEffect(() => {

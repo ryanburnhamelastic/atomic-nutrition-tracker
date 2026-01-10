@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { UserGoals, DailySummary } from '../types';
-import { goalsApi, dailySummaryApi } from '../lib/api';
+import { UserGoals, DailySummary, UserStats } from '../types';
+import { goalsApi, dailySummaryApi, userStatsApi } from '../lib/api';
 import { useAuth } from './AuthContext';
 import { getTodayDate } from '../lib/timeHelpers';
 
@@ -18,6 +18,11 @@ interface NutritionContextType {
   dailySummary: DailySummary | null;
   summaryLoading: boolean;
   refreshSummary: () => Promise<void>;
+
+  // User stats (streaks, achievements)
+  userStats: UserStats | null;
+  statsLoading: boolean;
+  refreshStats: () => Promise<void>;
 }
 
 const NutritionContext = createContext<NutritionContextType | undefined>(undefined);
@@ -35,6 +40,10 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
   // Daily summary state
   const [dailySummary, setDailySummary] = useState<DailySummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
+
+  // User stats state
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   // Fetch user's nutrition goals
   const refreshGoals = useCallback(async () => {
@@ -70,6 +79,23 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
     }
   }, [isLoaded, isSignedIn, selectedDate]);
 
+  // Fetch user stats (streaks, achievements)
+  const refreshStats = useCallback(async () => {
+    if (!isLoaded || !isSignedIn) return;
+
+    setStatsLoading(true);
+    try {
+      const response = await userStatsApi.get();
+      if (response.data) {
+        setUserStats(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user stats:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [isLoaded, isSignedIn]);
+
   // Load goals when user signs in
   useEffect(() => {
     if (isLoaded && isSignedIn) {
@@ -88,6 +114,15 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
     }
   }, [isLoaded, isSignedIn, selectedDate, refreshSummary]);
 
+  // Load stats when user signs in
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      refreshStats();
+    } else {
+      setUserStats(null);
+    }
+  }, [isLoaded, isSignedIn, refreshStats]);
+
   const value: NutritionContextType = {
     selectedDate,
     setSelectedDate,
@@ -97,6 +132,9 @@ export function NutritionProvider({ children }: { children: ReactNode }) {
     dailySummary,
     summaryLoading,
     refreshSummary,
+    userStats,
+    statsLoading,
+    refreshStats,
   };
 
   return (

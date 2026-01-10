@@ -36,7 +36,7 @@ export default function LogFood() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { selectedDate, refreshSummary, goals, dailySummary } = useNutrition();
+  const { selectedDate, refreshSummary, refreshStats, goals, dailySummary } = useNutrition();
 
   // Meal planner state
   const [showMealPlanner, setShowMealPlanner] = useState(false);
@@ -55,6 +55,7 @@ export default function LogFood() {
 
   const handleSuccess = async () => {
     await refreshSummary();
+    await refreshStats();
     navigate('/', { state: { refreshData: true } });
   };
 
